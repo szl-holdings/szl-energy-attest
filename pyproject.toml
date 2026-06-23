@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "szl-energy-attest"
+version = "0.1.0"
+description = "Attestable energy receipts for governed compute — MEASURED-NVML joules, cheapest-watt placement, hash-chained signable receipts."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Stephen Lutar" }]
+keywords = ["energy", "governance", "provenance", "nvml", "attestation", "hash-chain"]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
+# Pure-stdlib core (hashlib + json). NVML measurement is optional and only
+# produces a number on a real GPU box — never required to verify a chain.
+dependencies = []
+
+[project.optional-dependencies]
+gpu = ["pynvml>=11.0"]
+
+[project.urls]
+Homepage = "https://a11oy.net"
+Repository = "https://huggingface.co/SZLHOLDINGS/szl-energy-attest"
+
+[project.scripts]
+szl-energy-attest = "szl_energy_attest.cli:main"
+
+[tool.setuptools]
+packages = ["szl_energy_attest"]

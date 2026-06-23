@@ -1,0 +1,43 @@
+{
+  "tool": "szl_energy_attest",
+  "version": "0.2.0",
+  "canon_source": "szl_energy_core",
+  "nvml_available": false,
+  "disclaimer": "SAMPLE / illustrative receipts. Energy is MEASURED only from a real NVML delta; null + UNAVAILABLE means no GPU on this box. No joule, price, or carbon figure is fabricated.",
+  "receipts": [
+    {
+      "schema": "szl_energy_attest/receipt@1",
+      "measured_joules": null,
+      "label": "UNAVAILABLE",
+      "tokens": 128,
+      "node": "example-node-a",
+      "price_per_mwh": null,
+      "gCO2": null,
+      "gCO2_label": "UNAVAILABLE_NO_GRID_INTENSITY",
+      "decision": "no_choice",
+      "note": "SAMPLE receipt \u2014 single node, no comparable alternative this tick",
+      "lambda": "Conjecture 1 (advisory; trust never 100%)",
+      "sovereign": false,
+      "prev": "0000000000000000000000000000000000000000000000000000000000000000",
+      "payload_digest": "sha3-256:2f60cc57e928b28619b85a802451d96b02eceab0728b46702f14f56b133fd76e",
+      "digest": "sha3-256:fca4b7323564ff13057c06b3a5139fbcd7227ee7855ded110fcec03442c6ec31"
+    },
+    {
+      "schema": "szl_energy_attest/receipt@1",
+      "measured_joules": null,
+      "label": "UNAVAILABLE",
+      "tokens": 256,
+      "node": "example-node-b",
+      "price_per_mwh": null,
+      "gCO2": null,
+      "gCO2_label": "UNAVAILABLE_NO_GRID_INTENSITY",
+      "decision": "no_choice",
+      "note": "SAMPLE receipt \u2014 chained to previous; energy honest-null on CPU",
+      "lambda": "Conjecture 1 (advisory; trust never 100%)",
+      "sovereign": false,
+      "prev": "sha3-256:fca4b7323564ff13057c06b3a5139fbcd7227ee7855ded110fcec03442c6ec31",
+      "payload_digest": "sha3-256:da5dd24485ce2e7f9a8e1e2b3f7df7646226d56a23c9622bf16468975a0b6daf",
+      "digest": "sha3-256:1c4b77bb32dc366a7f4501da124c32851ddf5a24be9d7c5365f37ca0d1e7d7f9"
+    }
+  ]
+}

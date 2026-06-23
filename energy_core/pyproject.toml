@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "szl-energy-core"
+version = "1.0.0"
+description = "Honest measured-joule accounting + cheapest-watt placement, extracted from szl-holdings/a11oy."
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+nvml = ["pynvml"]
+torch = ["torch"]
+
+[tool.setuptools]
+packages = ["szl_energy_core"]
