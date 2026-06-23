@@ -212,3 +212,12 @@ Apache-2.0. © 2026 SZL Holdings. See [LICENSE](LICENSE).
 <a href="https://github.com/szl-holdings/szl-energy-attest">github.com/szl-holdings/szl-energy-attest</a> ·
 <a href="https://huggingface.co/SZLHOLDINGS/szl-energy-attest">huggingface.co/SZLHOLDINGS/szl-energy-attest</a>
 </sub>
+
+---
+
+## Holographic showcase
+
+Live 3D holographic Space (green lattice bound to 67 attestation tests; measured-only
+NVML joules, never fabricated):
+https://huggingface.co/spaces/SZLHOLDINGS/energy-attest-holo
+Part of the SZL governed substrate: https://huggingface.co/spaces/SZLHOLDINGS/szl-substrate
