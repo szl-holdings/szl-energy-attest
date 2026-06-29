@@ -171,8 +171,8 @@ verification procedure.
   the caller when a real cosign key is present — absent a key, the receipt is
   honest-but-unsigned, never faked.
 
-This is the energy lens of the **[a11oy](https://a11oy.net) governed-AI platform**
-([SZL Holdings](https://a11oy.net/company)), which records governed decisions as
+This is the energy lens of the **[a11oy](https://a-11-oy.com) governed-AI platform**
+([SZL Holdings](https://a-11-oy.com/company)), which records governed decisions as
 cryptographically signed, tamper-evident receipts verifiable offline by anyone with
 a public key. It composes with:
 
@@ -208,7 +208,7 @@ Apache-2.0. © 2026 SZL Holdings. See [LICENSE](LICENSE).
 
 <sub>
 <b>SZL Holdings</b> · attestable energy receipts · MEASURED joules or honest UNAVAILABLE · Λ = Conjecture 1 (advisory) ·
-<a href="https://a11oy.net">a11oy.net</a> ·
+<a href="https://a-11-oy.com">a-11-oy.com</a> ·
 <a href="https://github.com/szl-holdings/szl-energy-attest">github.com/szl-holdings/szl-energy-attest</a> ·
 <a href="https://huggingface.co/SZLHOLDINGS/szl-energy-attest">huggingface.co/SZLHOLDINGS/szl-energy-attest</a>
 </sub>

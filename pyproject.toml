@@ -24,7 +24,7 @@ dependencies = []
 gpu = ["pynvml>=11.0"]
 
 [project.urls]
-Homepage = "https://a11oy.net"
+Homepage = "https://a-11-oy.com"
 Repository = "https://huggingface.co/SZLHOLDINGS/szl-energy-attest"
 
 [project.scripts]
