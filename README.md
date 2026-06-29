@@ -11,7 +11,7 @@ pretty_name: Attestable Energy Receipts for Governed Compute
 
 # szl_energy_attest — attestable energy receipts for governed compute
 
-> **GitHub mirror** of the energy artifact published at **[huggingface.co/SZLHOLDINGS/szl-energy-attest](https://huggingface.co/SZLHOLDINGS/szl-energy-attest)**. The Hugging Face repo is the canonical published surface; this repository mirrors the same source of truth and additionally vendors the runnable energy core under [`energy_core/`](energy_core/) so the wrapped measurement path is co-located.
+> **Canonical source.** This GitHub repository is the source of truth for the energy-attestation artifact and vendors the runnable energy core under [`energy_core/`](energy_core/), co-located with the wrapped measurement path. The energy lens is served live as part of the a11oy governed substrate at [a-11-oy.com](https://a-11-oy.com) (see `/api/a11oy/v1/energy/*`).
 
 **Turn the energy a unit of compute spends into a receipt you can verify — offline, by anyone, with nothing but a hash function.**
 
@@ -209,8 +209,7 @@ Apache-2.0. © 2026 SZL Holdings. See [LICENSE](LICENSE).
 <sub>
 <b>SZL Holdings</b> · attestable energy receipts · MEASURED joules or honest UNAVAILABLE · Λ = Conjecture 1 (advisory) ·
 <a href="https://a-11-oy.com">a-11-oy.com</a> ·
-<a href="https://github.com/szl-holdings/szl-energy-attest">github.com/szl-holdings/szl-energy-attest</a> ·
-<a href="https://huggingface.co/SZLHOLDINGS/szl-energy-attest">huggingface.co/SZLHOLDINGS/szl-energy-attest</a>
+<a href="https://github.com/szl-holdings/szl-energy-attest">github.com/szl-holdings/szl-energy-attest</a>
 </sub>
 
 ---
