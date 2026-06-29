@@ -11,7 +11,7 @@ pretty_name: Attestable Energy Receipts for Governed Compute
 
 # szl_energy_attest — attestable energy receipts for governed compute
 
-> **GitHub mirror** of the energy artifact published at **[huggingface.co/SZLHOLDINGS/szl-energy-attest](https://huggingface.co/SZLHOLDINGS/szl-energy-attest)**. The Hugging Face repo is the canonical published surface; this repository mirrors the same source of truth and additionally vendors the runnable energy core under [`energy_core/`](energy_core/) so the wrapped measurement path is co-located.
+> **Canonical source.** This GitHub repository is the canonical, version-controlled source for `szl_energy_attest` (the attestation package, the vendored runnable energy core under [`energy_core/`](energy_core/), tests, spec, and license). There is **no** published Hugging Face `szl-energy-attest` repo today — a prior version of this banner claimed a `huggingface.co/SZLHOLDINGS/szl-energy-attest` mirror that does not exist, and that false claim has been removed. If/when an HF surface is published it will be generated from this source; until then, GitHub is the single source of truth.
 
 **Turn the energy a unit of compute spends into a receipt you can verify — offline, by anyone, with nothing but a hash function.**
 
@@ -209,15 +209,16 @@ Apache-2.0. © 2026 SZL Holdings. See [LICENSE](LICENSE).
 <sub>
 <b>SZL Holdings</b> · attestable energy receipts · MEASURED joules or honest UNAVAILABLE · Λ = Conjecture 1 (advisory) ·
 <a href="https://a11oy.net">a11oy.net</a> ·
-<a href="https://github.com/szl-holdings/szl-energy-attest">github.com/szl-holdings/szl-energy-attest</a> ·
-<a href="https://huggingface.co/SZLHOLDINGS/szl-energy-attest">huggingface.co/SZLHOLDINGS/szl-energy-attest</a>
+<a href="https://github.com/szl-holdings/szl-energy-attest">github.com/szl-holdings/szl-energy-attest</a>
 </sub>
 
 ---
 
-## Holographic showcase
+## Demo Spaces (roadmap — not yet live)
 
-Live 3D holographic Space (green lattice bound to 67 attestation tests; measured-only
-NVML joules, never fabricated):
-https://huggingface.co/spaces/SZLHOLDINGS/energy-attest-holo
-Part of the SZL governed substrate: https://huggingface.co/spaces/SZLHOLDINGS/szl-substrate
+> **ROADMAP — not yet publicly live.** A companion showcase Space
+> (`energy-attest-holo`) is **planned but not yet live** — it is not publicly
+> reachable today, so it is labeled as roadmap rather than presented as a live
+> deployment. The quickstart above runs fully locally in any Python environment
+> right now (`measured_joules: null`, `label: "UNAVAILABLE"`, chain still
+> verifies on a CPU-only box). MEASURED joules only, never fabricated.
