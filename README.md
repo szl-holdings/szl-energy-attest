@@ -214,9 +214,12 @@ Apache-2.0. © 2026 SZL Holdings. See [LICENSE](LICENSE).
 
 ---
 
-## Holographic showcase
+## HF cross-reference (alignment fix 2026-06-30)
 
-Live 3D holographic Space (green lattice bound to 67 attestation tests; measured-only
-NVML joules, never fabricated):
-https://huggingface.co/spaces/SZLHOLDINGS/energy-attest-holo
-Part of the SZL governed substrate: https://huggingface.co/spaces/SZLHOLDINGS/szl-substrate
+**GitHub↔HF name mapping:** `szl-holdings/szl-energy-attest` (GitHub) ↔ [`SZLHOLDINGS/energy`](https://huggingface.co/spaces/SZLHOLDINGS/energy) (HF Space).
+
+The live HF Space for this repo is [`SZLHOLDINGS/energy`](https://huggingface.co/spaces/SZLHOLDINGS/energy) — energy-metered inference receipts (tokens/joule, NVML when GPU present, honest `mode=unmeasured` on CPU).
+
+> **Note:** Previously this section linked to `SZLHOLDINGS/energy-attest-holo` and `SZLHOLDINGS/szl-substrate` — both confirmed non-existent as of 2026-06-30 estate audit. These references have been removed and replaced with the correct live Space.
+
+*Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>*
