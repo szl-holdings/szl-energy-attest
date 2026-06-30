@@ -64,6 +64,30 @@ _BODY_FIELDS = (
 )
 
 
+_ORGAN = "szl-energy-attest"
+
+
+def _maybe_sign(body: Dict[str, Any],
+                sign_key: Optional[Any],
+                organ: str) -> Optional[Dict[str, Any]]:
+    """ADDITIVE szl-receipt DSSE/ECDSA-P256 signature over the receipt *body*.
+
+    Returns a signature envelope from ``szl_receipt.sign_receipt`` covering the
+    exact body that feeds ``payload_digest``, or ``None`` when szl-receipt is
+    not installed (the package then behaves exactly as before — stdlib-only).
+    Doctrine: with no *sign_key* the envelope is UNSIGNED-honest
+    (``signed=False``); a signature is NEVER fabricated. This per-receipt
+    ECDSA-P256 signature is additive and independent of the hash chain and of
+    the existing chain-level HMAC ``sign_chain`` hook.
+    """
+    try:
+        from szl_receipt import Receipt, sign_receipt
+    except Exception:  # noqa: BLE001 - signing is optional; absence is honest
+        return None
+    return sign_receipt(Receipt(kind="energy-attest", body=body),
+                        sign_key, organ=organ)
+
+
 def _finite(x: Any) -> Optional[float]:
     """Return x as a finite float, or None.
 
@@ -253,7 +277,9 @@ def build_receipt(*,
                   grid_intensity_gco2_per_kwh: Optional[float] = None,
                   decision: str = "no_choice",
                   prev: str = GENESIS_PREV,
-                  note: str = "") -> Dict[str, Any]:
+                  note: str = "",
+                  sign_key: Optional[Any] = None,
+                  organ: str = _ORGAN) -> Dict[str, Any]:
     """Mint one attestable energy receipt.
 
     measured_joules is a real number ONLY when label == MEASURED *and* it is a
@@ -309,6 +335,12 @@ def build_receipt(*,
     receipt["prev"] = prev
     receipt["payload_digest"] = payload_digest
     receipt["digest"] = digest
+    # ADDITIVE szl-receipt signature over the body. Does not touch the body /
+    # payload_digest / digest, so verify_chain + verify_receipt_offline (which
+    # only read _BODY_FIELDS) are unaffected. Keyless => UNSIGNED-honest.
+    sig = _maybe_sign(body, sign_key, organ)
+    if sig is not None:
+        receipt["signature"] = sig
     return receipt
 
 
