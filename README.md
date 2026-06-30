@@ -179,7 +179,7 @@ a public key. It composes with:
 - **lutar-lean** — Lean 4 machine-checked proofs of the Λ uniqueness theorem and
   the Egyptian-exactness lemma (DOI [10.5281/zenodo.20434308](https://doi.org/10.5281/zenodo.20434308)).
 - **vsp-otel** — the verifiable-span OpenTelemetry exporter that carries these
-  receipts as spans (DOI [10.5281/zenodo.20424995](https://doi.org/10.5281/zenodo.20424995)).
+  receipts as spans (DOI [10.5281/zenodo.19944926](https://doi.org/10.5281/zenodo.19944926)).
 
 ---
 
