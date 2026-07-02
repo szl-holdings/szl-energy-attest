@@ -603,9 +603,14 @@ from ._attest import (  # noqa: E402
     compliance_evidence,
     verify_statement,
     to_json,
+    emit_receipt,
+    energy_binding,
     IN_TOTO_STATEMENT_TYPE,
     SZL_PREDICATE_TYPE,
     ATTEST_DOCTRINE,
+    PCGI_RECEIPT_SCHEMA,
+    PCGI_DOCTRINE,
+    DEFAULT_POLICY_ID,
 )
 
 __all__ = [
@@ -621,4 +626,7 @@ __all__ = [
     "attest", "to_intoto_statement", "compliance_evidence",
     "verify_statement", "to_json",
     "IN_TOTO_STATEMENT_TYPE", "SZL_PREDICATE_TYPE", "ATTEST_DOCTRINE",
+    # canonical szl-receipt spine fold (PCGI emit_receipt binding)
+    "emit_receipt", "energy_binding",
+    "PCGI_RECEIPT_SCHEMA", "PCGI_DOCTRINE", "DEFAULT_POLICY_ID",
 ]

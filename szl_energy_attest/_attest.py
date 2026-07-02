@@ -54,6 +54,26 @@ ATTEST_DOCTRINE = (
     "conformance."
 )
 
+# --- Canonical szl-receipt spine fold (PCGI emit_receipt binding) ----------
+# The canonical szl-receipt "emit_receipt" pattern binds one governed decision
+# into ONE signed receipt over: subject/meter id + input digest + output/
+# measurement digest + governing policy id + energy. For energy-attest, energy
+# is the REAL counterpart of the spine: MEASURED-NVML joules bound VERBATIM when
+# actually measured, otherwise the literal "UNAVAILABLE" (never a fabricated
+# joule). The signed envelope is produced by szl-receipt's DSSE/ECDSA-P256 path,
+# which is honest-unsigned (signed=False) when no key is supplied.
+PCGI_RECEIPT_SCHEMA = "szl_energy_attest/pcgi-receipt@1"
+DEFAULT_POLICY_ID = "szl-energy-attest/governed-compute@1"
+DEFAULT_ORGAN = "szl-energy-attest"
+
+PCGI_DOCTRINE = (
+    "This receipt binds subject + input + output + governing policy + energy as "
+    "an EVIDENCE trail. It attests the integrity and reproducibility of the "
+    "record, NOT the correctness of the computation. Energy is MEASURED only "
+    "from a real NVML delta and carried verbatim; otherwise it is the literal "
+    "UNAVAILABLE and no joule is fabricated."
+)
+
 
 def _shared():
     """Lazily import the shared attestation module. Absence is honest and loud:
@@ -210,6 +230,74 @@ def attest(receipt: Dict[str, Any],
         "statement": to_intoto_statement(receipt, subject_name=subject_name),
         "compliance": compliance_evidence(receipt),
     }
+
+
+def energy_binding(receipt: Dict[str, Any]) -> Dict[str, Any]:
+    """Honest energy binding for the spine receipt.
+
+    Returns ``{measured, joules, label}`` where ``joules`` is the receipt's
+    MEASURED-NVML value copied VERBATIM only when the receipt itself attests a
+    real MEASURED joule (label == MEASURED and measured_joules present);
+    otherwise ``joules`` is the literal string ``"UNAVAILABLE"`` and
+    ``measured`` is False. A joule is NEVER fabricated here.
+    """
+    measured = _is_measured(receipt)
+    joules = receipt.get("measured_joules")
+    return {
+        "measured": measured,
+        "joules": joules if (measured and joules is not None) else _ea.LABEL_UNAVAILABLE,
+        "label": receipt.get("label"),
+    }
+
+
+def emit_receipt(receipt: Dict[str, Any],
+                 *,
+                 input_digest: Optional[str] = None,
+                 output_digest: Optional[str] = None,
+                 subject: Optional[str] = None,
+                 policy_id: str = DEFAULT_POLICY_ID,
+                 sign_key: Optional[Any] = None,
+                 organ: str = DEFAULT_ORGAN,
+                 keyid: str = "") -> Dict[str, Any]:
+    """Fold one energy receipt onto the canonical szl-receipt spine.
+
+    Produces ONE canonical szl-receipt (a DSSE/ECDSA-P256 envelope from
+    ``szl_receipt.sign_receipt``) binding the governed-compute decision:
+
+      * ``subject``       — the meter/node id (defaults to the receipt's node).
+      * ``input_digest``  — digest of the metered work's input; honest literal
+        ``"UNAVAILABLE"`` when the caller does not supply one (never faked).
+      * ``output_digest`` — the measurement digest: defaults to the receipt's
+        content-addressed ``payload_digest`` so the spine receipt is inseparable
+        from the exact energy record it describes.
+      * ``policy_id``     — the governing policy id.
+      * ``energy``        — the honest MEASURED-verbatim / UNAVAILABLE binding
+        (see :func:`energy_binding`).
+
+    Doctrine: the envelope is signed only when a real ``sign_key`` is supplied;
+    keyless => honest UNSIGNED envelope (``signed=False``), never a fake
+    signature. The receipt is an EVIDENCE trail attesting integrity and
+    reproducibility of the record, not the correctness of the computation.
+    """
+    from szl_receipt import Receipt, sign_receipt  # noqa: WPS433 (lazy by design)
+
+    out_digest = (output_digest
+                  or receipt.get("payload_digest")
+                  or _ea.sha256_canon(_body(receipt)))
+    subj = subject or "szl-energy-attest/meter/{}".format(
+        receipt.get("node", "unknown-node"))
+    body = {
+        "schema": PCGI_RECEIPT_SCHEMA,
+        "subject": subj,
+        "input_digest": (input_digest if input_digest is not None
+                         else _ea.LABEL_UNAVAILABLE),
+        "output_digest": out_digest,
+        "policy_id": policy_id,
+        "energy": energy_binding(receipt),
+        "doctrine": PCGI_DOCTRINE,
+    }
+    return sign_receipt(Receipt(kind="energy-attest", body=body),
+                        sign_key, organ=organ, keyid=keyid)
 
 
 def to_json(obj: Any) -> str:
