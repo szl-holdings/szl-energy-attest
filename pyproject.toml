@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "szl-energy-attest"
-version = "0.1.0"
+version = "0.3.0"
 description = "Attestable energy receipts for governed compute — MEASURED-NVML joules, cheapest-watt placement, hash-chained signable receipts."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -24,7 +24,7 @@ dependencies = []
 gpu = ["pynvml>=11.0"]
 # Optional DSSE/ECDSA-P256 per-receipt signing via the shared szl-receipt lib.
 # Opt-in; the import is lazy so the stdlib-only core is unchanged without it.
-sign = ["szl-receipt>=0.1.0"]
+sign = ["szl-receipt>=0.2.0"]
 test = ["pytest"]
 
 [project.urls]

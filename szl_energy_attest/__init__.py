@@ -42,7 +42,7 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 GENESIS_PREV = "0" * 64
 
@@ -591,6 +591,23 @@ def verify_signature(receipts: List[Dict[str, Any]],
         return {"signed": True, "valid": False, "reason": "verify error: %s" % e}
 
 
+# ADDITIVE standards-interop layer (in-toto / SLSA-shaped statement + regulator
+# mapping). The Statement/predicate/catalogue SHAPES are DELEGATED to the shared
+# szl_receipt.attest lib; _attest.py only maps this package's receipt schema to
+# it. Imported at the bottom so the names above (_BODY_FIELDS, sha256_canon) are
+# already defined when the adapter binds to them. The szl_receipt import inside
+# is lazy, so importing this package stays zero-hard-dependency (stdlib-only).
+from ._attest import (  # noqa: E402
+    attest,
+    to_intoto_statement,
+    compliance_evidence,
+    verify_statement,
+    to_json,
+    IN_TOTO_STATEMENT_TYPE,
+    SZL_PREDICATE_TYPE,
+    ATTEST_DOCTRINE,
+)
+
 __all__ = [
     "__version__", "GENESIS_PREV",
     "LABEL_MEASURED", "LABEL_UNAVAILABLE", "LABEL_SAMPLE",
@@ -600,4 +617,8 @@ __all__ = [
     "nvml_available", "measure_joules", "measure_block",
     "compute_gco2", "build_receipt", "verify_chain",
     "verify_receipt_offline", "sign_chain", "verify_signature",
+    # standards-interop (delegated to szl_receipt.attest)
+    "attest", "to_intoto_statement", "compliance_evidence",
+    "verify_statement", "to_json",
+    "IN_TOTO_STATEMENT_TYPE", "SZL_PREDICATE_TYPE", "ATTEST_DOCTRINE",
 ]
