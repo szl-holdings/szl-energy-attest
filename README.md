@@ -11,7 +11,7 @@ pretty_name: Attestable Energy Receipts for Governed Compute
 
 # szl_energy_attest — attestable energy receipts for governed compute
 
-> **Canonical source.** This GitHub repository is the source of truth for the energy-attestation artifact and vendors the runnable energy core under [`energy_core/`](energy_core/), co-located with the wrapped measurement path. The energy lens is served live as part of the a11oy governed substrate at [a-11-oy.com](https://a-11-oy.com) (see `/api/a11oy/v1/energy/*`).
+> **Canonical source.** This GitHub repository is the source of truth for the energy-attestation artifact and vendors the runnable energy core under [`energy_core/`](energy_core/), co-located with the wrapped measurement path. It is real, tested, and downloadable for direct consumption. **Note on the flagship:** the a11oy governed substrate at [a-11-oy.com](https://a-11-oy.com) currently serves its *own* inline energy implementation (`szl_joules_truth.py` / `szl_energy_operator.py`) under `/api/a11oy/v1/energy/*`; this package is the canonical kernel available for direct use — it is **not yet** the flagship's served code path.
 
 **Turn the energy a unit of compute spends into a receipt you can verify — offline, by anyone, with nothing but a hash function.**
 
