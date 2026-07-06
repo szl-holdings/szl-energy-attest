@@ -1,6 +1,6 @@
 {
   "tool": "szl_energy_attest",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "canon_source": "szl_energy_core",
   "nvml_available": false,
   "disclaimer": "SAMPLE / illustrative receipts. Energy is MEASURED only from a real NVML delta; null + UNAVAILABLE means no GPU on this box. No joule, price, or carbon figure is fabricated.",

@@ -8,7 +8,7 @@ abstract: >-
   placement decisions, and optional live grid price / carbon — re-hashable and
   verifiable offline by anyone. Never fabricates a joule, a price, or a receipt.
 type: software
-version: 0.1.0
+version: 0.3.0
 license: Apache-2.0
 repository-url: "https://huggingface.co/SZLHOLDINGS/szl-energy-attest"
 authors:
@@ -30,4 +30,4 @@ references:
     doi: "10.5281/zenodo.20434308"
   - type: software
     title: "vsp-otel — verifiable-span OpenTelemetry exporter"
-    doi: "10.5281/zenodo.20424995"
+    doi: "10.5281/zenodo.19944926"
