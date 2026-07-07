@@ -35,4 +35,6 @@ Repository = "https://huggingface.co/SZLHOLDINGS/szl-energy-attest"
 szl-energy-attest = "szl_energy_attest.cli:main"
 
 [tool.setuptools]
-packages = ["szl_energy_attest"]
+# Includes the folded-in live inference metering subpackage (Wave D: absorbed
+# from the now-DEPRECATED governed-inference-meter repo).
+packages = ["szl_energy_attest", "szl_energy_attest.inference_meter"]

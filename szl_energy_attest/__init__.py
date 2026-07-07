@@ -613,6 +613,15 @@ from ._attest import (  # noqa: E402
     DEFAULT_POLICY_ID,
 )
 
+# CONSOLIDATION (Wave D): the live inference metering surface folded in from the
+# former governed-inference-meter micro-repo (now DEPRECATED, points here). This
+# is the part that package did NOT already have: a live EnergyMeter (NVML energy
+# counter + power-integral fallback), an advisory policy gate, and meter()/
+# metered() inference wrappers with tokens-per-joule receipts. Nothing deleted
+# there (additive, reversible copy). Lazy submodule import keeps the parent's
+# stdlib-only import path unchanged; imported at the bottom so names above bind.
+from . import inference_meter  # noqa: E402,F401
+
 __all__ = [
     "__version__", "GENESIS_PREV",
     "LABEL_MEASURED", "LABEL_UNAVAILABLE", "LABEL_SAMPLE",
@@ -629,4 +638,6 @@ __all__ = [
     # canonical szl-receipt spine fold (PCGI emit_receipt binding)
     "emit_receipt", "energy_binding",
     "PCGI_RECEIPT_SCHEMA", "PCGI_DOCTRINE", "DEFAULT_POLICY_ID",
+    # folded-in live inference metering (Wave D consolidation)
+    "inference_meter",
 ]
