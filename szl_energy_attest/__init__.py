@@ -163,6 +163,64 @@ def canon_source() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Algorithm-agnostic canonical recompute for VERIFICATION.
+# A chain is minted under whatever canonical hash the MINTING box had active:
+# SHA3-256 when the runnable szl_energy_core is importable (a GPU/metering node),
+# otherwise the byte-identical stdlib SHA-256 fallback. A valid chain MUST be
+# verifiable on ANY box — including a CPU-only auditor box with no core — no
+# matter which algorithm minted it. verify_receipt_offline already auto-detects
+# the algorithm from each receipt's own digest prefix; the helpers below bring
+# verify_chain to that same parity, so a SHA3-256 chain no longer fails to verify
+# just because the verifying box lacks the core. The canonical JSON is identical
+# for both algorithms (sorted keys, tight separators, allow_nan=False) and
+# matches szl_energy_core.sha3_canon and the local SHA-256 fallback byte-for-byte
+# (see SPEC.md §2). This is a verification-only widening; minting is unchanged.
+# ---------------------------------------------------------------------------
+_SUPPORTED_CANON_ALGS = ("sha3-256", "sha256")
+
+
+def _canon_for_alg(alg: str, obj: Dict[str, Any]) -> str:
+    """Canonical digest of ``obj`` under an EXPLICIT algorithm prefix.
+
+    Supports only the two algorithms an SZL energy chain is ever minted under
+    (``sha3-256`` from the core, ``sha256`` from the stdlib fallback). Any other
+    prefix raises ``ValueError`` so an unknown/forged algorithm is a hard verify
+    failure (caught as a graceful break) rather than a silent pass.
+    """
+    if alg not in _SUPPORTED_CANON_ALGS:
+        raise ValueError("unsupported canon algorithm: %r" % alg)
+    blob = json.dumps(obj, sort_keys=True, separators=(",", ":"),
+                      allow_nan=False).encode()
+    algo = hashlib.sha3_256 if alg == "sha3-256" else hashlib.sha256
+    return alg + ":" + algo(blob).hexdigest()
+
+
+def _active_alg() -> str:
+    """The algorithm prefix the ACTIVE canon source (``canon_source()``) emits."""
+    try:
+        return sha256_canon({"_probe": 0}).split(":", 1)[0]
+    except Exception:  # noqa: BLE001 - fall back to the stdlib default
+        return "sha256"
+
+
+_ACTIVE_ALG = _active_alg()
+
+
+def _canon_verify(alg: str):
+    """Return the correct canonical-hash fn for a receipt declaring ``alg``.
+
+    When ``alg`` matches the active canon source we reuse the wired
+    ``sha256_canon`` (guaranteed byte-identical to how THIS box mints, even if a
+    core supplies its own implementation); otherwise we recompute locally under
+    the receipt's declared algorithm. Either way an auditor on any box can verify
+    a chain minted anywhere.
+    """
+    if alg == _ACTIVE_ALG:
+        return sha256_canon
+    return lambda obj: _canon_for_alg(alg, obj)
+
+
+# ---------------------------------------------------------------------------
 # Energy measurement. MEASURED only from a REAL NVML reading. On a CPU-only box
 # pynvml is absent -> we return (None, UNAVAILABLE), honestly. We NEVER synthesize
 # a joule. If the core/operator exposes a measured per-job joule reading, a caller
@@ -351,6 +409,13 @@ def verify_chain(receipts: List[Dict[str, Any]]) -> Tuple[bool, int, int]:
     (prev, payload_digest) to digest, and (c) have prev == previous digest
     (genesis = 64 zeros). Any mismatch — INCLUDING a malformed/missing-field or
     non-finite-number receipt — returns ok=False at the first break, never a crash.
+
+    ALGORITHM-AGNOSTIC: each receipt is re-hashed under the algorithm it declares
+    in its own ``digest`` prefix (``sha3-256`` from the core, ``sha256`` from the
+    stdlib fallback), NOT under whatever canon source happens to be active on the
+    verifying box. So a chain minted under SHA3-256 on a metering node verifies on
+    a CPU-only auditor box (and vice-versa), matching verify_receipt_offline. An
+    unknown/forged algorithm prefix fails closed (a graceful break, never a crash).
     """
     prev = GENESIS_PREV
     for i, r in enumerate(receipts):
@@ -358,11 +423,15 @@ def verify_chain(receipts: List[Dict[str, Any]]) -> Tuple[bool, int, int]:
             if not isinstance(r, dict):
                 return (False, len(receipts), i)
             # Missing any body/chain field, or a non-finite number in the body,
-            # is a hard break (sha256_canon uses allow_nan=False). We catch it as
-            # a graceful failure so a third party can never crash our verifier.
+            # is a hard break (canon uses allow_nan=False). We catch it as a
+            # graceful failure so a third party can never crash our verifier.
             body = {k: r[k] for k in _BODY_FIELDS}
-            pd = sha256_canon(body)
-            dg = sha256_canon({"prev": r["prev"], "payload_digest": pd})
+            # Re-hash under the receipt's OWN declared algorithm (parity with
+            # verify_receipt_offline); an unsupported prefix raises ValueError,
+            # caught below as a graceful break.
+            canon = _canon_verify(str(r["digest"]).split(":", 1)[0])
+            pd = canon(body)
+            dg = canon({"prev": r["prev"], "payload_digest": pd})
             if (pd != r["payload_digest"] or dg != r["digest"]
                     or r["prev"] != prev):
                 return (False, len(receipts), i)
