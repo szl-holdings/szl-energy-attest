@@ -247,6 +247,89 @@ def test_signature_is_detached_chain_unchanged():
     assert verify_chain([r0])[0] is True
 
 
+# ---------------------------------------------------------------------------
+# UPGRADE 4 — cross-algorithm verification parity.
+# A chain minted under SHA3-256 on a metering node (szl_energy_core active) must
+# verify on a CPU-only auditor box whose active canon is the SHA-256 fallback,
+# and vice-versa. verify_chain is now algorithm-agnostic (parity with
+# verify_receipt_offline): it re-hashes each receipt under the algorithm the
+# receipt itself declares, so provenance is checkable by ANYONE regardless of
+# which canon source minted the chain. These receipts are hand-minted with
+# hashlib directly (the exact SPEC.md §2 / szl_energy_core.sha3_canon formula),
+# independent of whichever canon source is active on this test box.
+# ---------------------------------------------------------------------------
+import hashlib as _hashlib  # noqa: E402
+
+
+def _sha3_canon(obj):
+    blob = json.dumps(obj, sort_keys=True, separators=(",", ":"),
+                      allow_nan=False).encode()
+    return "sha3-256:" + _hashlib.sha3_256(blob).hexdigest()
+
+
+def _mint_sha3_chain(specs):
+    """Hand-mint a receipt chain using SHA3-256 canonicalization directly, so the
+    test does not depend on whichever canon source is active on this box."""
+    chain = []
+    prev = GENESIS_PREV
+    for tokens, node in specs:
+        body = {
+            "schema": "szl_energy_attest/receipt@1",
+            "measured_joules": None,
+            "label": LABEL_UNAVAILABLE,
+            "tokens": tokens,
+            "node": node,
+            "price_per_mwh": None,
+            "gCO2": None,
+            "gCO2_label": "UNAVAILABLE_NO_GRID_INTENSITY",
+            "decision": "no_choice",
+            "note": "",
+            "lambda": "Conjecture 1 (advisory; trust never 100%)",
+            "sovereign": False,
+        }
+        pd = _sha3_canon(body)
+        dg = _sha3_canon({"prev": prev, "payload_digest": pd})
+        chain.append(dict(body, prev=prev, payload_digest=pd, digest=dg))
+        prev = dg
+    return chain
+
+
+def test_verify_chain_accepts_foreign_sha3_algorithm():
+    chain = _mint_sha3_chain([(1, "a"), (2, "b")])
+    # These really are SHA3-256 digests, distinct from the active fallback's algo.
+    assert all(r["digest"].startswith("sha3-256:") for r in chain)
+    ok, length, brk = verify_chain(chain)
+    assert ok is True and length == 2 and brk == -1
+
+
+def test_verify_chain_and_offline_agree_on_sha3_chain():
+    chain = _mint_sha3_chain([(3, "x"), (4, "y"), (5, "z")])
+    ok, _, _ = verify_chain(chain)
+    off = verify_receipt_offline(chain)
+    assert ok is True and off["ok"] is True and off["honesty_ok"] is True
+
+
+def test_verify_chain_catches_tamper_in_sha3_chain():
+    chain = _mint_sha3_chain([(1, "a"), (2, "b")])
+    chain[1]["tokens"] = 999  # tamper body without re-hashing under sha3-256
+    ok, _, brk = verify_chain(chain)
+    assert ok is False and brk == 1
+
+
+def test_verify_chain_catches_reorder_in_sha3_chain():
+    chain = _mint_sha3_chain([(1, "a"), (2, "b")])
+    ok, _, _ = verify_chain([chain[1], chain[0]])
+    assert ok is False
+
+
+def test_verify_chain_rejects_unknown_algorithm_prefix():
+    chain = _mint_sha3_chain([(1, "a")])
+    # Forge an unsupported algorithm prefix: verify must fail closed, not crash.
+    chain[0]["digest"] = "sha42-999:" + chain[0]["digest"].split(":", 1)[1]
+    ok, _, brk = verify_chain(chain)
+    assert ok is False and brk == 0
+
+
 if __name__ == "__main__":
     import pytest as _p
     raise SystemExit(_p.main([__file__, "-q"]))

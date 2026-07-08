@@ -44,8 +44,14 @@ receipts share one hash math across the platform:
 
 `canon_source()` reports which is active. Within a single chain the hash function is
 fixed, so receipts minted and re-verified by the same source reproduce identical
-digests. The verifier recomputes whatever `payload_digest`/`digest` the receipts
-declare using the active canonical hash.
+digests. Verification is **algorithm-agnostic**: the verifier recomputes each
+receipt under the algorithm that receipt declares in its own `digest` prefix
+(`sha3-256:` or `sha256:`), NOT under whatever canon source happens to be active on
+the verifying box. Because the canonical JSON is identical for both algorithms
+(sorted keys, tight separators, `allow_nan=False`), a chain minted under SHA3-256 on
+a metering node re-verifies on a CPU-only auditor box with no core (and vice-versa).
+An unknown/forged algorithm prefix fails closed. This holds for both
+`verify_chain` and `verify_receipt_offline`.
 
 ## 3. Label semantics (the honesty contract)
 
