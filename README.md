@@ -9,6 +9,8 @@ language:
 pretty_name: Attestable Energy Receipts for Governed Compute
 ---
 
+> **SZL Holdings** · Doctrine v11 · Λ = Conjecture 1 (advisory, never "green"/theorem) · canonical [a-11-oy.com](https://a-11-oy.com)
+
 # szl_energy_attest — attestable energy receipts for governed compute
 
 > **Canonical source.** This GitHub repository is the source of truth for the energy-attestation artifact and vendors the runnable energy core under [`energy_core/`](energy_core/), co-located with the wrapped measurement path. It is real, tested, and downloadable for direct consumption. **Note on the flagship:** the a11oy governed substrate at [a-11-oy.com](https://a-11-oy.com) currently serves its *own* inline energy implementation (`szl_joules_truth.py` / `szl_energy_operator.py`) under `/api/a11oy/v1/energy/*`; this package is the canonical kernel available for direct use — it is **not yet** the flagship's served code path.
