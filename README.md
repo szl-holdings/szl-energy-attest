@@ -218,12 +218,12 @@ Apache-2.0. © 2026 SZL Holdings. See [LICENSE](LICENSE).
 
 ---
 
-## HF cross-reference (alignment fix 2026-06-30)
+## HF cross-reference (alignment fix 2026-07-09)
 
-**GitHub↔HF name mapping:** `szl-holdings/szl-energy-attest` (GitHub) ↔ [`SZLHOLDINGS/energy`](https://huggingface.co/spaces/SZLHOLDINGS/energy) (HF Space).
+**GitHub↔HF mapping:** `szl-holdings/szl-energy-attest` (GitHub) is the **canonical source of truth** for this artifact — there is currently **no dedicated Hugging Face Space** for it.
 
-The live HF Space for this repo is [`SZLHOLDINGS/energy`](https://huggingface.co/spaces/SZLHOLDINGS/energy) — energy-metered inference receipts (tokens/joule, NVML when GPU present, honest `mode=unmeasured` on CPU).
+The energy-attestation capability is served **live** by the a11oy governed substrate at [a-11-oy.com](https://a-11-oy.com) under `/api/a11oy/v1/energy/*` (energy-metered inference receipts — tokens/joule, NVML when a GPU is present, honest `UNAVAILABLE`/`unmeasured` on CPU). The broader estate is on the [SZL Holdings Hugging Face org](https://huggingface.co/SZLHOLDINGS).
 
-> **Note:** Previously this section linked to `SZLHOLDINGS/energy-attest-holo` and `SZLHOLDINGS/szl-substrate` — both confirmed non-existent as of 2026-06-30 estate audit. These references have been removed and replaced with the correct live Space.
+> **Note:** Earlier revisions of this section linked to Spaces `SZLHOLDINGS/energy-attest-holo`, `SZLHOLDINGS/szl-substrate` (2026-06-30 audit) and `SZLHOLDINGS/energy` (2026-07-09 audit) — all three confirmed non-existent and removed here. No live Space is claimed that does not exist.
 
 *Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>*
