@@ -77,6 +77,86 @@ verbatim, or `null`. They are never assumed, modeled-as-fact, or back-filled.
 
 ---
 
+## `grid_context` — documenting *when/where* a run happened (REPORTED, optional)
+
+A receipt can carry an **optional `grid_context` block**: the *observed grid
+signal* at run time — the grid's carbon intensity (gCO₂/kWh) and, where a provider
+publishes one, the wholesale price. It lets a run **document that it happened in a
+cleaner / cheaper / curtailed window** — the software-scheduling discipline that is
+the one honest transfer from demand-response operators.
+
+**It is pass-through provenance, not measurement.** `grid_context` is completely
+independent of the NVML joule-truth path: with no GPU, `measured_joules` stays
+`null` + `UNAVAILABLE` exactly as before. **A `grid_context` block never turns an
+unmeasured run into a measured one, and never becomes a joule.**
+
+**This does not create or measure free energy; scheduling compute into cleaner
+windows is the only transfer.** There is no free-energy, perpetual-motion, or
+zero-cost-energy claim here — "curtailed / dumped" power is real waste energy that
+still costs real money and hardware to capture. Λ remains **Conjecture 1** (open).
+
+### Honest labels (every field)
+
+- **REPORTED** — a value carried **verbatim** from a real public signal, together
+  with its `source` URL and its `observed_at` / `fetched_at` timestamps.
+- **UNAVAILABLE** — the signal was missing, unreachable, malformed, or the provider
+  publishes no such value. The field is `null`. **Never invented, modelled, or
+  defaulted.**
+
+The carbon number is labelled by *kind* so it is never over-claimed:
+`carbon_intensity_kind: "grid_average"` for the UK signal (an average mix, **not**
+marginal) vs `"marginal"` only when a provider that actually reports marginal
+operating emissions is used.
+
+### Providers
+
+- **`uk_carbon_intensity`** — the **default, keyless** provider (UK
+  [Carbon Intensity API](https://api.carbonintensity.org.uk/intensity)). Reports
+  grid-**average** carbon intensity (actual/forecast). It publishes **no price**, so
+  `price_per_mwh` is `null` / `UNAVAILABLE` for this provider — honestly.
+- **`electricity_maps`**, **`watttime`** — **OPTIONAL, key-gated** providers. Without
+  a caller-supplied `api_key` they return an honest `UNAVAILABLE` block. **A key is
+  never required** — the keyless UK signal always works.
+
+```python
+from szl_energy_attest import (
+    build_receipt, fetch_grid_context, verify_chain, GENESIS_PREV,
+)
+
+# Keyless UK Carbon Intensity API. Network failure => honest UNAVAILABLE nulls.
+gc = fetch_grid_context("uk_carbon_intensity")   # REPORTED pass-through block
+
+r = build_receipt(tokens=128, node="node-a", prev=GENESIS_PREV, grid_context=gc)
+# measured_joules stays null/UNAVAILABLE on a CPU box — grid_context adds context,
+# not joules. The block is hashed into the receipt, so it is tamper-evident too.
+assert verify_chain([r])[0]
+```
+
+A `grid_context` block (REPORTED, from the keyless UK signal):
+
+```json
+{
+  "provider": "uk_carbon_intensity",
+  "source": "https://api.carbonintensity.org.uk/intensity",
+  "region": "GB",
+  "observed_at": "2026-07-09T18:30Z",
+  "fetched_at": "2026-07-09T19:05:00Z",
+  "carbon_intensity_gco2_per_kwh": 121,
+  "carbon_intensity_kind": "grid_average",
+  "carbon_intensity_index": "moderate",
+  "carbon_intensity_label": "REPORTED",
+  "price_per_mwh": null,
+  "price_label": "UNAVAILABLE",
+  "note": "REPORTED grid-average carbon intensity (actual) …; NOT marginal, NOT a MEASURED joule."
+}
+```
+
+`grid_context` is **hashed into the receipt body only when present**, so it is
+tamper-evident (a forged intensity breaks the chain) while receipts *without* it
+re-hash byte-identically to the pre-`grid_context` schema (full back-compat).
+
+---
+
 ## Install / layout
 
 This repository vendors two co-located packages:

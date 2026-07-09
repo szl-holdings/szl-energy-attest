@@ -66,6 +66,41 @@ _BODY_FIELDS = (
 
 _ORGAN = "szl-energy-attest"
 
+# OPTIONAL body field (hashed ONLY when present). A receipt may carry a
+# ``grid_context`` block — the observed, REPORTED grid signal (carbon intensity
+# + price) at run time, from a public API (see ``_grid``). It documents that a
+# run happened in a cleaner / cheaper / curtailed window WITHOUT ever claiming a
+# MEASURED joule; the NVML joule-truth path is untouched. It is part of the hash
+# when present (tamper-evident) but absent by default, so legacy receipts hash
+# byte-identically — same back-compat pattern as gCO2_label.
+_OPTIONAL_BODY_FIELDS = ("grid_context",)
+
+# Honest grid-signal helpers (stdlib-only, standalone; no circular import).
+from ._grid import (  # noqa: E402
+    fetch_grid_context,
+    sanitize_grid_context,
+    unavailable_grid_context,
+    GRID_LABEL_REPORTED,
+    GRID_LABEL_UNAVAILABLE,
+    PROVIDER_UK_CARBON_INTENSITY,
+    PROVIDER_ELECTRICITY_MAPS,
+    PROVIDER_WATTTIME,
+)
+
+
+def _body_from(source: Dict[str, Any]) -> Dict[str, Any]:
+    """Reconstruct the hashed body from a receipt/body dict.
+
+    Required ``_BODY_FIELDS`` plus any OPTIONAL field that is actually present
+    and non-null (so absence hashes exactly as the pre-grid_context schema did).
+    Single source of truth so build_receipt + verify_chain never drift.
+    """
+    body = {k: source[k] for k in _BODY_FIELDS}
+    for k in _OPTIONAL_BODY_FIELDS:
+        if source.get(k) is not None:
+            body[k] = source[k]
+    return body
+
 
 def _maybe_sign(body: Dict[str, Any],
                 sign_key: Optional[Any],
@@ -333,6 +368,7 @@ def build_receipt(*,
                   gco2: Optional[float] = None,
                   gco2_label: Optional[str] = None,
                   grid_intensity_gco2_per_kwh: Optional[float] = None,
+                  grid_context: Optional[Dict[str, Any]] = None,
                   decision: str = "no_choice",
                   prev: str = GENESIS_PREV,
                   note: str = "",
@@ -387,6 +423,14 @@ def build_receipt(*,
         "lambda": "Conjecture 1 (advisory; trust never 100%)",
         "sovereign": False,
     }
+    # OPTIONAL grid_context: a REPORTED, pass-through grid signal (carbon
+    # intensity + price) from a public API, sanitised to honest null/UNAVAILABLE
+    # where a value is missing. Attached to the hashed body ONLY when supplied,
+    # so receipts without it hash byte-identically to the pre-grid_context schema.
+    # It NEVER touches measured_joules / label — the NVML joule-truth is untouched.
+    gc = sanitize_grid_context(grid_context)
+    if gc is not None:
+        body["grid_context"] = gc
     payload_digest = sha256_canon(body)
     digest = sha256_canon({"prev": prev, "payload_digest": payload_digest})
     receipt = dict(body)
@@ -425,7 +469,10 @@ def verify_chain(receipts: List[Dict[str, Any]]) -> Tuple[bool, int, int]:
             # Missing any body/chain field, or a non-finite number in the body,
             # is a hard break (canon uses allow_nan=False). We catch it as a
             # graceful failure so a third party can never crash our verifier.
-            body = {k: r[k] for k in _BODY_FIELDS}
+            # _body_from() also folds in the OPTIONAL grid_context when present,
+            # so a tampered grid_context breaks the chain (tamper-evident) while
+            # receipts without it hash exactly as the pre-grid_context schema.
+            body = _body_from(r)
             # Re-hash under the receipt's OWN declared algorithm (parity with
             # verify_receipt_offline); an unsupported prefix raises ValueError,
             # caught below as a graceful break.
@@ -519,6 +566,11 @@ def verify_receipt_offline(receipt_json) -> dict:
                         "honesty_ok": honesty_ok}
             fields = BODY if "gCO2_label" in r else BODY_LEGACY
             body = {k: r[k] for k in fields}
+            # OPTIONAL grid_context is part of the hash ONLY when present, so a
+            # receipt carrying a REPORTED grid signal is tamper-evident too while
+            # legacy receipts (no grid_context) re-hash exactly as before.
+            if r.get("grid_context") is not None:
+                body["grid_context"] = r["grid_context"]
             if _has_nonfinite(body) or _has_nonfinite(r.get("prev")):
                 return {"ok": False, "length": len(receipts),
                         "first_break_index": i,

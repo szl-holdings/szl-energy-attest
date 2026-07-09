@@ -66,6 +66,42 @@ An unknown/forged algorithm prefix fails closed. This holds for both
 enforces this; `verify_chain` will reject any receipt whose digests do not match the
 declared body, so a hand-edited joule number breaks the chain.
 
+## 3a. Optional `grid_context` block (REPORTED pass-through)
+
+A receipt MAY carry an **optional** `grid_context` object recording the *observed grid
+signal* at run time (carbon intensity + price), fetched from a public API. It documents
+that a run happened in a cleaner/cheaper/curtailed window. It is **REPORTED pass-through
+provenance, never a MEASURED joule** — it is independent of the NVML joule-truth path and
+never alters `measured_joules` / `label`. **This does not create or measure free energy;
+scheduling compute into cleaner windows is the only transfer.**
+
+`grid_context` is part of the hashed body **only when present**, so it is tamper-evident,
+while receipts without it re-hash byte-identically to the pre-`grid_context` schema
+(back-compat, exactly like the `gCO2_label` field). `sanitize_grid_context` coerces every
+numeric field through the finite-or-null gate and forces each `*_label` to follow the
+actual value (a `null` value can never be labelled `REPORTED`).
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `provider` | string | Signal provider id: `uk_carbon_intensity` (keyless default), `electricity_maps` / `watttime` (OPTIONAL, key-gated). |
+| `source` | string | The signal's source URL. |
+| `region` | string \| **null** | Grid region (e.g. `GB`), or `null`. |
+| `observed_at` | string \| **null** | ISO-8601 timestamp the reading applies to (from the signal), or `null`. |
+| `fetched_at` | string \| **null** | ISO-8601 timestamp when we fetched it. |
+| `carbon_intensity_gco2_per_kwh` | number \| **null** | Observed grid carbon intensity, carried verbatim, or `null`. |
+| `carbon_intensity_kind` | string \| **null** | `grid_average` (UK CI API) or `marginal` — never over-claimed. |
+| `carbon_intensity_index` | string \| **null** | Provider's own index text (e.g. `moderate`), pass-through. |
+| `carbon_intensity_label` | string | `REPORTED` (real value present) or `UNAVAILABLE` (value is `null`). |
+| `price_per_mwh` | number \| **null** | Wholesale price where the provider gives one, verbatim, else `null`. |
+| `price_label` | string | `REPORTED` or `UNAVAILABLE`. |
+| `note` | string | Honesty note. |
+
+**Honest-null rule:** a missing/unreachable/malformed signal, an unknown provider, or a
+key-gated provider with no key ALL yield an all-`null` block with `UNAVAILABLE` labels.
+`fetch_grid_context` never raises to the caller and never invents a number. The UK Carbon
+Intensity API publishes carbon intensity but **no price**, so `price_per_mwh` is always
+`null`/`UNAVAILABLE` for that provider — honestly.
+
 ## 4. Verification procedure (offline, by anyone)
 
 Given a list of receipts `[r0, r1, …]`:
