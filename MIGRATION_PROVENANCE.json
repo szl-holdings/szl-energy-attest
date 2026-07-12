@@ -1,0 +1,69 @@
+{
+  "schema": "szl.archive-migration-provenance/v1",
+  "observed_at_utc": "2026-07-11T00:00:00Z",
+  "source_repository": "szl-holdings/governed-inference-meter",
+  "successor_repository": "szl-holdings/szl-energy-attest",
+  "successor_surface": "szl_energy_attest.inference_meter",
+  "claim": "Compatibility fold with file-level provenance; schema parity with the parent energy receipt is not claimed.",
+  "source_revision": {
+    "github_observed": "e4ae1d15ebba255eae144937790ead3ce567a7a0",
+    "local_snapshot_git_metadata": false,
+    "evidence_anchor": "File hashes remain authoritative for the local fold."
+  },
+  "mappings": [
+    {
+      "source": "build/torch-universal/governed_inference_meter/_energy.py",
+      "destination": "szl_energy_attest/inference_meter/_energy.py",
+      "source_sha256": "d1ae459b182d328fe05589fe099a37c56f605960078e8702a196b167d93ec33f",
+      "destination_sha256": "d1ae459b182d328fe05589fe099a37c56f605960078e8702a196b167d93ec33f",
+      "transform": "exact-copy"
+    },
+    {
+      "source": "build/torch-universal/governed_inference_meter/_policy.py",
+      "destination": "szl_energy_attest/inference_meter/_policy.py",
+      "source_sha256": "96d7ea0b227f1a54462964e2406e8284beb0a0dfa530d3be38581a1a25fa42dd",
+      "destination_sha256": "96d7ea0b227f1a54462964e2406e8284beb0a0dfa530d3be38581a1a25fa42dd",
+      "transform": "exact-copy"
+    },
+    {
+      "source": "build/torch-universal/governed_inference_meter/_receipt.py",
+      "destination": "szl_energy_attest/inference_meter/_receipt.py",
+      "source_sha256": "5ab4a43279d288c2e4c6a82ceb1fa52e2cdfb9d459f3a995b017355f67c23897",
+      "destination_sha256": "5ab4a43279d288c2e4c6a82ceb1fa52e2cdfb9d459f3a995b017355f67c23897",
+      "transform": "exact-copy"
+    },
+    {
+      "source": "build/torch-universal/governed_inference_meter/_attest.py",
+      "destination": "szl_energy_attest/inference_meter/_attest.py",
+      "source_sha256": "0e3bed1c468da88e147ba2518a48b0514b28dab955e2580393d0d60a3d406c30",
+      "destination_sha256": "3e4229e1c327f269cd69a41513dd7a4c1d8d7124b4b7e8d58b494af408f6069e",
+      "transform": "package-name-and-install-guidance-rewrite-only",
+      "transform_detail": [
+        "governed_inference_meter package label changed to szl_energy_attest.inference_meter",
+        "installation guidance changed to szl-energy-attest[sign]"
+      ]
+    },
+    {
+      "source": "build/torch-universal/governed_inference_meter/_spine.py",
+      "destination": "szl_energy_attest/inference_meter/_spine.py",
+      "source_sha256": "a5b4d38e01d7137cbcd6e4ec2a3bd89fe2f680e1e7b9f8c6dadd81fe9bd3d126",
+      "destination_sha256": "bf9f157f2d77807d720bd59ea6b1c0ea161c04843c00396a66795d41d3716fba",
+      "transform": "package-import-and-install-guidance-rewrite-only",
+      "transform_detail": [
+        "governed_inference_meter package import changed to szl_energy_attest.inference_meter",
+        "installation guidance changed to szl-energy-attest[sign]"
+      ]
+    }
+  ],
+  "archive_gate": {
+    "local_code_state": "READY_AFTER_GREEN_TESTS",
+    "publication_required": true,
+    "archive_authorized": false,
+    "ordering": [
+      "merge and verify successor compatibility fold",
+      "merge deprecated-source pointer correction",
+      "re-scan inbound links",
+      "owner decides whether to archive source"
+    ]
+  }
+}
