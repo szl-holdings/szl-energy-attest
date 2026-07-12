@@ -12,10 +12,11 @@ reversible copy.
 WHY THIS IS NOT A DUPLICATE OF THE PARENT PACKAGE
 -------------------------------------------------
 The parent ``szl_energy_attest`` package (and its vendored ``szl_energy_core``)
-already provides: the attestable, hash-chained energy *receipt* schema, the
-in-toto / SLSA-shaped attestation + regulator mapping, the canonical
-``emit_receipt`` / PCGI binding, and an NVML *energy-counter delta* measurement
-(``szl_energy_core.measure_energy``). Those are NOT re-copied here.
+provides its canonical energy-receipt schema, in-toto adapter, PCGI binding, and
+NVML energy-counter measurement. The deprecated meter's schema-specific
+``_attest`` and ``_spine`` adapters are retained here as a compatibility layer:
+they delegate to the shared ``szl-receipt`` library and preserve existing
+imports without claiming that the two receipt schemas are identical.
 
 What this subpackage adds is the part the parent package did NOT have — a
 **live inference meter**:
@@ -33,6 +34,8 @@ What this subpackage adds is the part the parent package did NOT have — a
     policy gate and emit a tamper-evident, SHA-256 hash-chained receipt
     (``ReceiptChain``) with tokens-per-joule (only when energy was measured).
   * ``selfcheck`` — a one-shot, GPU-free end-to-end functional check.
+  * Legacy meter-specific attestation and PCGI spine helpers, retained with a
+    hash-addressed migration manifest for import continuity.
 
 HONESTY (Λ = Conjecture 1, advisory — NOT a theorem):
   * Energy is MEASURED only when NVML is present and grants readback; otherwise
@@ -50,7 +53,15 @@ import contextlib
 import time
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
-from . import _energy, _policy, _receipt
+from . import _attest, _energy, _policy, _receipt, _spine
+from ._attest import (
+    IN_TOTO_STATEMENT_TYPE,
+    SZL_PREDICATE_TYPE,
+    attest,
+    compliance_evidence,
+    to_intoto_statement,
+    verify_statement,
+)
 from ._energy import (
     MODE_ENERGY_COUNTER,
     MODE_POWER_INTEGRAL,
@@ -61,6 +72,20 @@ from ._energy import (
 )
 from ._policy import ALLOW, DENY, PolicyResult, allow_all, deny_all, evaluate
 from ._receipt import ReceiptChain, default_chain
+from ._spine import (
+    CANONICAL_KIND,
+    ENERGY_UNAVAILABLE,
+    PREDICATE_TYPE,
+    SPEC_VERSION,
+    canonical_receipt_body,
+    digest,
+    emit_szl_receipt,
+    from_meter_receipt,
+    meter_szl_receipt,
+    to_statement,
+    verify_szl_receipt,
+    verify_szl_statement,
+)
 
 __all__ = [
     "meter",
@@ -77,12 +102,30 @@ __all__ = [
     "receipt_tail",
     "receipt_verify",
     "selfcheck",
+    "attest",
+    "to_intoto_statement",
+    "compliance_evidence",
+    "verify_statement",
+    "IN_TOTO_STATEMENT_TYPE",
+    "SZL_PREDICATE_TYPE",
     "DOCTRINE_FOOTER",
     "MODE_UNMEASURED",
     "MODE_ENERGY_COUNTER",
     "MODE_POWER_INTEGRAL",
     "ALLOW",
     "DENY",
+    "emit_szl_receipt",
+    "from_meter_receipt",
+    "meter_szl_receipt",
+    "canonical_receipt_body",
+    "to_statement",
+    "verify_szl_receipt",
+    "verify_szl_statement",
+    "digest",
+    "CANONICAL_KIND",
+    "PREDICATE_TYPE",
+    "SPEC_VERSION",
+    "ENERGY_UNAVAILABLE",
     "__version__",
 ]
 
