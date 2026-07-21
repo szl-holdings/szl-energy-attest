@@ -260,8 +260,8 @@ This is the energy lens of the **[a11oy](https://a-11-oy.com) governed-AI platfo
 cryptographically signed, tamper-evident receipts verifiable offline by anyone with
 a public key. It composes with:
 
-- **lutar-lean** — Lean 4 machine-checked proofs of the Λ uniqueness theorem and
-  the Egyptian-exactness lemma (DOI [10.5281/zenodo.20434308](https://doi.org/10.5281/zenodo.20434308)).
+- **lutar-lean** — Lean 4 formalization of Λ (**Conjecture 1**, uniqueness proof-deferred — NOT a theorem) plus the
+  machine-checked Egyptian-exactness lemma (DOI [10.5281/zenodo.20434308](https://doi.org/10.5281/zenodo.20434308)).
 - **vsp-otel** — the verifiable-span OpenTelemetry exporter that carries these
   receipts as spans (DOI [10.5281/zenodo.19944926](https://doi.org/10.5281/zenodo.19944926)).
 
