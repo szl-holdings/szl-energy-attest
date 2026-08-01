@@ -4,6 +4,9 @@ tags:
   - energy
   - governance
   - provenance
+  - software
+  - measurement
+  - receipts
 language:
   - en
 pretty_name: Attestable Energy Receipts for Governed Compute
@@ -31,29 +34,40 @@ the energy field is `null` and labeled `UNAVAILABLE` — never a fabricated numb
 
 ---
 
-## Category of one
+## Artifact truth card
 
-Lots of tools *measure* power. Plenty *log* carbon. Dashboards estimate kWh and
-cloud bills approximate cost. All of that is **telemetry** — numbers in a chart you
-are asked to trust.
+| Field | Truthful classification |
+|---|---|
+| Artifact | **Executable measurement and receipt software**, not trained weights and not a carbon model. |
+| Primary evidence | Source, tests, migration hashes, canonical receipt serialization, and offline chain verification. |
+| `MEASURED` | Only a fresh supported NVML counter delta or power-sample integral from the executing environment. |
+| `UNAVAILABLE` | No supported device, driver, permission, binding, or fresh reading; energy-dependent fields remain null. |
+| `SAMPLE` | Documentation payloads and example commands until an evaluator runs them. |
+| Limits | A hash establishes internal integrity, not authorship; optional signing does not establish that a measurement is accurate; policy remains host-enforced. |
 
-`szl_energy_attest` is a different category. It makes energy an **attestable,
-verifiable receipt**:
+**Investor value.** The package turns an otherwise ephemeral hardware reading
+into portable evidence with explicit missing-data semantics, reducing the risk
+that estimated or absent energy data is presented as measured fact.
 
-| The usual thing | This thing |
+**Developer/evaluator path.** Install the package, call `capability_report()`
+before metering, run one known workload, and verify the resulting chain offline.
+Keep `UNAVAILABLE` as the terminal result when the environment cannot measure.
+
+## Product value without a novelty claim
+
+Energy tools expose different layers: counters, estimates, dashboards, and
+audit records. This package focuses narrowly on binding a supported hardware
+observation, its availability state, and receipt provenance into one record.
+
+| Common telemetry path | This package's bounded contribution |
 | --- | --- |
-| Measure watts → show a chart | Measure joules → **mint a signed, hash-chained receipt** |
-| Log carbon to a dashboard | Bind carbon (when known) into a **re-hashable record** |
-| "Trust our number" | **Re-hash it yourself, offline, and verify the chain** |
-| Green by assertion | Honest `UNAVAILABLE` when we cannot measure |
+| Measure watts and render a chart | Record supported joules in a signable, hash-chained receipt |
+| Estimate carbon or cost | Bind only declared inputs; leave unknown values unavailable |
+| Retain an application log | Export a canonical record an evaluator can re-hash offline |
+| Fill missing values | Preserve explicit `UNAVAILABLE` / null fields |
 
-Everyone measures energy or logs carbon. Nobody makes energy an **attestable
-receipt** — a record whose every field is either a measured fact or an explicit,
-truthful null, provable by anyone after the fact. That is the gap this fills.
-
----
-
-## What is MEASURED vs UNAVAILABLE
+The value is the explicit evidence boundary. This repository makes no
+ecosystem-wide novelty claim.## What is MEASURED vs UNAVAILABLE
 
 This is the most important section. Read it before trusting any field.
 
@@ -298,12 +312,12 @@ Apache-2.0. © 2026 SZL Holdings. See [LICENSE](LICENSE).
 
 ---
 
-## HF cross-reference (alignment fix 2026-07-09)
+## Hugging Face presentation boundary
 
-**GitHub↔HF mapping:** `szl-holdings/szl-energy-attest` (GitHub) is the **canonical source of truth** for this artifact — there is currently **no dedicated Hugging Face Space** for it.
-
-The energy-attestation capability is served **live** by the a11oy governed substrate at [a-11-oy.com](https://a-11-oy.com) under `/api/a11oy/v1/energy/*` (energy-metered inference receipts — tokens/joule, NVML when a GPU is present, honest `UNAVAILABLE`/`unmeasured` on CPU). The broader estate is on the [SZL Holdings Hugging Face org](https://huggingface.co/SZLHOLDINGS).
-
-> **Note:** Earlier revisions of this section linked to Spaces `SZLHOLDINGS/energy-attest-holo`, `SZLHOLDINGS/szl-substrate` (2026-06-30 audit) and `SZLHOLDINGS/energy` (2026-07-09 audit) — all three confirmed non-existent and removed here. No live Space is claimed that does not exist.
-
-*Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>*
+The [GitHub repository](https://github.com/szl-holdings/szl-energy-attest) is the
+canonical source for this package. Use the
+[SZL Holdings Hugging Face organization](https://huggingface.co/SZLHOLDINGS) to
+discover separately published compatibility artifacts or presentation Spaces.
+Names, reachability, and runtime state may change and are not asserted here.
+The deprecated meter's immutable loading contract remains under
+[`hf-kernels/governed-inference-meter`](hf-kernels/governed-inference-meter/README.md).*Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>*
