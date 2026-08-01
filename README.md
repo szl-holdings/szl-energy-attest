@@ -42,16 +42,17 @@ the energy field is `null` and labeled `UNAVAILABLE` — never a fabricated numb
 | Primary evidence | Source, tests, migration hashes, canonical receipt serialization, and offline chain verification. |
 | `MEASURED` | Only a fresh supported NVML counter delta or power-sample integral from the executing environment. |
 | `UNAVAILABLE` | No supported device, driver, permission, binding, or fresh reading; energy-dependent fields remain null. |
-| `SAMPLE` | Documentation payloads and example commands until an evaluator runs them. |
+| `SAMPLE` | A real workload ran, but the supported NVML path did not yield a fresh billable joule reading; energy remains null and is not promoted to `MEASURED`. |
 | Limits | A hash establishes internal integrity, not authorship; optional signing does not establish that a measurement is accurate; policy remains host-enforced. |
 
 **Investor value.** The package turns an otherwise ephemeral hardware reading
 into portable evidence with explicit missing-data semantics, reducing the risk
 that estimated or absent energy data is presented as measured fact.
 
-**Developer/evaluator path.** Install the package, call `capability_report()`
-before metering, run one known workload, and verify the resulting chain offline.
-Keep `UNAVAILABLE` as the terminal result when the environment cannot measure.
+**Developer/evaluator path.** Install the package, import
+`capability_report` from `szl_energy_attest.inference_meter`, inspect it before
+metering, run one known workload, and verify the resulting chain offline. Keep
+`UNAVAILABLE` as the terminal result when the environment cannot measure.
 
 ## Product value without a novelty claim
 
