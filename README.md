@@ -41,7 +41,7 @@ the energy field is `null` and labeled `UNAVAILABLE` — never a fabricated numb
 | Artifact | **Executable measurement and receipt software**, not trained weights and not a carbon model. |
 | Primary evidence | Source, tests, migration hashes, canonical receipt serialization, and offline chain verification. |
 | `MEASURED` | Only a fresh supported NVML counter delta or power-sample integral from the executing environment. |
-| `UNAVAILABLE` | No supported device, driver, permission, binding, or fresh reading; energy-dependent fields remain null. |
+| `UNAVAILABLE` | No supported device, driver, permission, or binding; measurement capability is absent or unreachable and energy-dependent fields remain null. |
 | `SAMPLE` | A real workload ran, but the supported NVML path did not yield a fresh billable joule reading; energy remains null and is not promoted to `MEASURED`. |
 | Limits | A hash establishes internal integrity, not authorship; optional signing does not establish that a measurement is accurate; policy remains host-enforced. |
 
@@ -80,11 +80,12 @@ This is the most important section. Read it before trusting any field.
   NVML / exporter joule delta produced it. The label is decided by the energy
   core's joule-truth path, never by a convenience flag. Requires a GPU and a live
   metering exporter on the node that did the work.
-- **UNAVAILABLE** — there is no GPU and/or no fresh NVML delta on this box (e.g. a
-  CPU-only laptop, CI runner, or this Space). `measured_joules` is `null` and the
-  label says so. The receipt chain still verifies — the *provenance* is real even
-  when the *joules* cannot be.
-- **SAMPLE** — real work ran (so token/wall counts are honest) but its energy is
+- **UNAVAILABLE** — there is no reachable GPU/NVML measurement capability on this
+  box (e.g. a CPU-only laptop, CI runner, or this Space). `measured_joules` is
+  `null` and the label says so. The receipt chain still verifies — the
+  *provenance* is real even when the *joules* cannot be.
+- **SAMPLE** — real work ran and NVML was reachable, but no fresh supported
+  counter delta was available. Token/wall counts are honest, while energy is
   **not** a billable MEASURED joule, so we report `null`, never a guess.
 
 `price_per_mwh` and `gCO2` are **pass-through only**: a live grid meter value
