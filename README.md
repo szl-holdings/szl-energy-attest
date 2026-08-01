@@ -41,8 +41,8 @@ the energy field is `null` and labeled `UNAVAILABLE` — never a fabricated numb
 | Artifact | **Executable measurement and receipt software**, not trained weights and not a carbon model. |
 | Primary evidence | Source, tests, migration hashes, canonical receipt serialization, and offline chain verification. |
 | `MEASURED` | Only a fresh supported NVML counter delta or power-sample integral from the executing environment. |
-| `UNAVAILABLE` | NVML/device initialization or handle acquisition did not establish reachable measurement capability; energy-dependent fields remain null. |
-| `SAMPLE` | NVML and a device handle were reachable, but the measurement window produced no fresh supported counter delta; energy remains null and is not promoted to `MEASURED`. |
+| `UNAVAILABLE` | The selected root/core path did not establish usable measurement capability (for example, NVML initialization or device enumeration failed, or the core could not acquire a handle); energy-dependent fields remain null. |
+| `SAMPLE` | The selected path initialized NVML and found at least one device, but produced no fresh supported counter delta; energy remains null and is not promoted to `MEASURED`. |
 | Limits | A hash establishes internal integrity, not authorship; optional signing does not establish that a measurement is accurate; policy remains host-enforced. |
 
 **Investor value.** The package turns an otherwise ephemeral hardware reading
@@ -84,11 +84,11 @@ This is the most important section. Read it before trusting any field.
   box (e.g. a CPU-only laptop, CI runner, or this Space). `measured_joules` is
   `null` and the label says so. The receipt chain still verifies — the
   *provenance* is real even when the *joules* cannot be.
-- **SAMPLE** — NVML and a device handle were reachable, but the measurement
-  window produced no fresh supported counter delta. Energy is **not** a billable
+- **SAMPLE** — the selected path initialized NVML and found at least one device,
+  but produced no fresh supported counter delta. Energy is **not** a billable
   MEASURED joule, so we report `null`, never a guess. This label speaks only to
-  measurement state; by itself it proves neither workload execution nor token
-  provenance.
+  measurement-path state; by itself it proves neither device-handle acquisition,
+  workload execution, nor token provenance.
 
 `price_per_mwh` and `gCO2` are **pass-through only**: a live grid meter value
 verbatim, or `null`. They are never assumed, modeled-as-fact, or back-filled.
