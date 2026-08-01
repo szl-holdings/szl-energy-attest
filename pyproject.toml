@@ -29,7 +29,8 @@ test = ["pytest"]
 
 [project.urls]
 Homepage = "https://a-11-oy.com"
-Repository = "https://huggingface.co/SZLHOLDINGS/szl-energy-attest"
+Repository = "https://github.com/szl-holdings/szl-energy-attest"
+"Hugging Face" = "https://huggingface.co/SZLHOLDINGS"
 
 [project.scripts]
 szl-energy-attest = "szl_energy_attest.cli:main"
