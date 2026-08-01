@@ -51,8 +51,10 @@ that estimated or absent energy data is presented as measured fact.
 
 **Developer/evaluator path.** Install the package, import
 `capability_report` from `szl_energy_attest.inference_meter`, inspect it before
-metering, run one known workload, and verify the resulting chain offline. Keep
-`UNAVAILABLE` as the terminal result when the environment cannot measure.
+metering, run one known workload, and verify the resulting chain offline. On the
+inference-meter path, missing hardware evidence terminates as
+`mode="unmeasured"` with `joules: null`; the separate root receipt schema uses
+the `UNAVAILABLE` label.
 
 ## Product value without a novelty claim
 
