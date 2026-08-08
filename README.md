@@ -235,7 +235,7 @@ ok, length, first_break = verify_chain([r0, r1])
 assert ok  # re-hashes cleanly; energy is null/UNAVAILABLE but provenance is real
 ```
 
-A receipt body (`SAMPLE`, on a CPU-only box):
+An example receipt body (`UNAVAILABLE`, from a CPU-only box):
 
 ```json
 {
