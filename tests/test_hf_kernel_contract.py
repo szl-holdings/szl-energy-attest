@@ -29,3 +29,10 @@ def test_contract_points_to_folded_canonical_package():
 
     assert contract["canonical_source"] == "szl-holdings/szl-energy-attest"
     assert contract["compatibility_package"] == "szl_energy_attest.inference_meter"
+
+
+def test_contract_declares_kernel_hub_license_metadata():
+    contract = _contract()
+
+    assert contract["repo_type"] == "kernel"
+    assert contract["license"] == "apache-2.0"
