@@ -1,0 +1,18 @@
+{
+  "schema": "szl.hub-mirror-status/v1",
+  "artifact": "SZLHOLDINGS/szl-energy-attest",
+  "canonical_source": "https://github.com/szl-holdings/szl-energy-attest",
+  "hub_url": "https://huggingface.co/SZLHOLDINGS/szl-energy-attest",
+  "hub_state": "MIRROR_EMPTY",
+  "observed_at": "2026-09-04T15:39:00Z",
+  "observed_hub_contents": ["README.md", "bom/", ".gitattributes"],
+  "missing_on_hub": [
+    "package source",
+    "TRAINING_RECEIPT.json",
+    "BENCH.laptop-blackwell.json",
+    "OPERATIONAL.json"
+  ],
+  "next_step": "owner HF write + NVML run on metal; do not fabricate a bench",
+  "lambda": "Conjecture 1",
+  "tracker": "https://github.com/szl-holdings/szl-forge/issues/91"
+}
