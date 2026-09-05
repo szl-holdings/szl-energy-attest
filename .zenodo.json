@@ -1,0 +1,13 @@
+{
+  "title": "szl-energy-attest — attestable energy receipts for governed compute",
+  "upload_type": "software",
+  "description": "MEASURED-NVML joules or honest UNAVAILABLE null, cheapest-watt placement, hash-chained signable receipts. Never fabricates a joule. Λ = Conjecture 1 (advisory). Mirrors HF SZLHOLDINGS/szl-energy-attest.",
+  "creators": [{"name": "Lutar, Stephen P., Jr."}],
+  "license": {"id": "Apache-2.0"},
+  "keywords": ["governed-ai", "energy", "attestation", "receipts", "szl-holdings"],
+  "related_identifiers": [
+    {"identifier": "10.5281/zenodo.19944926", "relation": "isSupplementTo", "scheme": "doi"},
+    {"identifier": "https://huggingface.co/SZLHOLDINGS/szl-energy-attest", "relation": "isDocumentedBy", "scheme": "url"}
+  ],
+  "notes": "NEW work per the szl-papers deposit policy. Mint via GitHub release after enabling this repo in the owner's Zenodo account."
+}
