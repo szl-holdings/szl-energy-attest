@@ -1,33 +1,10 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it using these metadata."
-title: "szl_energy_attest"
-abstract: >-
-  Attestable energy receipts for governed compute. Turns a unit of governed
-  compute into a canonical, hash-chained JSON receipt recording MEASURED-NVML
-  joules (or an explicit UNAVAILABLE null when no GPU is present), cheapest-watt
-  placement decisions, and optional live grid price / carbon — re-hashable and
-  verifiable offline by anyone. Never fabricates a joule, a price, or a receipt.
+message: "If you use this software, please cite it as below."
 type: software
-version: 0.3.0
-license: Apache-2.0
-repository-url: "https://huggingface.co/SZLHOLDINGS/szl-energy-attest"
+title: "szl-energy-attest — attestable energy receipts for governed compute"
 authors:
-  - given-names: Stephen
-    family-names: Lutar
-    orcid: "https://orcid.org/0009-0001-0110-4173"
-    affiliation: "SZL Holdings"
-keywords:
-  - energy
-  - governance
-  - provenance
-  - nvml
-  - attestation
-  - hash-chain
-  - carbon
-references:
-  - type: software
-    title: "lutar-lean — machine-checked Λ proofs"
-    doi: "10.5281/zenodo.20434308"
-  - type: software
-    title: "vsp-otel — verifiable-span OpenTelemetry exporter"
-    doi: "10.5281/zenodo.19944926"
+  - family-names: Lutar
+    given-names: Stephen Paul
+license: Apache-2.0
+url: "https://huggingface.co/SZLHOLDINGS/szl-energy-attest"
+repository-code: "https://github.com/szl-holdings/szl-energy-attest"
