@@ -4,7 +4,10 @@
 Each test maps to a stress case / fixed bug / new upgrade. All run offline on CPU
 with honest UNAVAILABLE labels. Run: python -m pytest tests/ -q
 """
+import base64
 import copy
+import hashlib
+import hmac
 import json
 import math
 import os
@@ -245,6 +248,166 @@ def test_signature_is_detached_chain_unchanged():
     sign_chain([r0], key=b"k")
     assert r0 == before  # signing must not mutate receipts
     assert verify_chain([r0])[0] is True
+
+
+def _signature_chain():
+    r0 = build_receipt(tokens=1, node="synthetic-a", prev=GENESIS_PREV)
+    r1 = build_receipt(tokens=2, node="synthetic-b", prev=r0["digest"])
+    return [r0, r1]
+
+
+def _signature_envelope(chain, signed, monkeypatch):
+    monkeypatch.delenv("SZL_ATTEST_HMAC_KEY", raising=False)
+    return sign_chain(chain, key=b"synthetic-key" if signed else None)
+
+
+def _replace_signed_payload(envelope, payload, payload_type=None):
+    """Re-MAC substitutions so rejection checks binding, not merely MAC mismatch."""
+    envelope = copy.deepcopy(envelope)
+    ptype = payload_type or envelope["payloadType"]
+    envelope["payloadType"] = ptype
+    envelope["payload_b64"] = base64.b64encode(payload).decode()
+    pae = b"DSSEv1 %d %b %d %b" % (len(ptype), ptype.encode(), len(payload), payload)
+    if envelope["signatures"]:
+        envelope["signatures"][0]["sig"] = hmac.new(
+            b"synthetic-key", pae, hashlib.sha256).hexdigest()
+    return envelope
+
+
+@pytest.mark.parametrize("signed", [False, True])
+@pytest.mark.parametrize("replacement", ["different", "tampered", "truncated",
+                                          "reordered", "malformed", "empty", "container"])
+def test_signature_rejects_wrong_or_broken_chain(signed, replacement, monkeypatch):
+    chain = _signature_chain()
+    envelope = _signature_envelope(chain, signed, monkeypatch)
+    other = copy.deepcopy(chain)
+    if replacement == "different":
+        first = build_receipt(tokens=3, node="other-a", prev=GENESIS_PREV)
+        other = [first, build_receipt(tokens=4, node="other-b", prev=first["digest"])]
+        assert verify_chain(other)[0] is True
+    elif replacement == "tampered":
+        other[0]["tokens"] = 99  # unchanged terminal digest must not hide a broken link
+    elif replacement == "truncated":
+        other = other[:1]
+        assert verify_chain(other)[0] is True
+    elif replacement == "reordered":
+        other.reverse()
+    elif replacement == "malformed":
+        other[0] = None
+    elif replacement == "empty":
+        other = []
+    else:
+        other = {"receipts": other}
+    assert verify_signature(other, envelope, key=b"synthetic-key")["valid"] is False
+
+
+@pytest.mark.parametrize("signed", [False, True])
+@pytest.mark.parametrize("variant", ["head", "length", "bool_length", "inner_type",
+                                      "outer_type", "extra", "duplicate", "noncanonical"])
+def test_signature_rejects_authenticated_wrong_payload(signed, variant, monkeypatch):
+    chain = _signature_chain()
+    envelope = _signature_envelope(chain, signed, monkeypatch)
+    obj = json.loads(base64.b64decode(envelope["payload_b64"]))
+    ptype = None
+    if variant == "head":
+        obj["head"] = GENESIS_PREV
+    elif variant == "length":
+        obj["length"] = 3
+    elif variant == "bool_length":
+        obj["length"] = True
+    elif variant == "inner_type":
+        obj["payload_type"] = "application/other"
+    elif variant == "outer_type":
+        ptype = "application/other"
+    elif variant == "extra":
+        obj["extra"] = "unsupported"
+    payload = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
+    if variant == "duplicate":
+        payload = payload[:-1] + b',"length":2}'
+    elif variant == "noncanonical":
+        payload = json.dumps(obj, sort_keys=True).encode()
+    envelope = _replace_signed_payload(envelope, payload, ptype)
+    assert verify_signature(chain, envelope, key=b"synthetic-key")["valid"] is False
+
+
+@pytest.mark.parametrize("variant", ["missing", "not_dict", "no_label", "unknown_label",
+                                      "signed_empty", "unsigned_signature", "bad_list",
+                                      "extra_signature", "bad_entry", "bad_base64",
+                                      "base64_noise", "nonstring_base64", "bad_type",
+                                      "bad_signature", "unsupported_backend"])
+def test_signature_rejects_malformed_envelope(variant, monkeypatch):
+    chain = _signature_chain()
+    envelope = _signature_envelope(chain, True, monkeypatch)
+    if variant == "missing":
+        envelope = None
+    elif variant == "not_dict":
+        envelope = []
+    elif variant == "no_label":
+        del envelope["signature_label"]
+    elif variant == "unknown_label":
+        envelope["signature_label"] = "MAYBE"
+    elif variant == "signed_empty":
+        envelope["signatures"] = []
+    elif variant == "unsigned_signature":
+        envelope["signature_label"] = LABEL_UNSIGNED
+    elif variant == "bad_list":
+        envelope["signatures"] = {}
+    elif variant == "extra_signature":
+        envelope["signatures"].append(copy.deepcopy(envelope["signatures"][0]))
+    elif variant == "bad_entry":
+        envelope["signatures"] = [None]
+    elif variant == "bad_base64":
+        envelope["payload_b64"] = "not-base64!"
+    elif variant == "base64_noise":
+        envelope["payload_b64"] += "\n"
+    elif variant == "nonstring_base64":
+        envelope["payload_b64"] = 123
+    elif variant == "bad_type":
+        envelope["payloadType"] = None
+    elif variant == "bad_signature":
+        envelope["signatures"][0]["sig"] = None
+    else:
+        envelope["signatures"][0]["backend"] = "external-unverified"
+    assert verify_signature(chain, envelope, key=b"synthetic-key")["valid"] is False
+
+
+@pytest.mark.parametrize("signed", [False, True])
+def test_signature_empty_chain_is_only_empty_integrity(signed, monkeypatch):
+    envelope = _signature_envelope([], signed, monkeypatch)
+    payload = json.loads(base64.b64decode(envelope["payload_b64"]))
+    assert payload["head"] == GENESIS_PREV and payload["length"] == 0
+    result = verify_signature([], envelope, key=b"synthetic-key")
+    assert result["signed"] is signed and result["valid"] is True
+
+
+@pytest.mark.parametrize("mode", ["unsigned", "hmac", "custom"])
+def test_sign_chain_rejects_broken_chain_before_signer(mode, monkeypatch):
+    monkeypatch.delenv("SZL_ATTEST_HMAC_KEY", raising=False)
+    chain = _signature_chain()
+    chain[0]["tokens"] = 99
+    calls = []
+
+    def signer(pae):
+        calls.append(pae)
+        return "unused", "test", "unverified"
+
+    kwargs = {"key": b"synthetic-key"} if mode == "hmac" else {}
+    if mode == "custom":
+        kwargs["signer"] = signer
+    with pytest.raises(ValueError, match="receipt chain is invalid"):
+        sign_chain(chain, **kwargs)
+    assert calls == []
+
+
+def test_signature_custom_hmac_signer_roundtrip():
+    chain = _signature_chain()
+
+    def signer(pae):
+        return (hmac.new(b"synthetic-key", pae, hashlib.sha256).hexdigest(),
+                "synthetic-only", "hmac-sha256")
+
+    envelope = sign_chain(chain, signer=signer)
+    assert verify_signature(chain, envelope, key=b"synthetic-key")["valid"] is True
 
 
 # ---------------------------------------------------------------------------

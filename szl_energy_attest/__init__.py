@@ -613,6 +613,19 @@ LABEL_SIGNED = "SIGNED"
 _DSSE_PAYLOAD_TYPE = "application/vnd.szl.energy-attest.chain+json"
 
 
+def _chain_signature_payload(receipts: List[Dict[str, Any]]) -> bytes:
+    """Commit to the terminal digest and length of a verified receipt list."""
+    if not isinstance(receipts, list):
+        raise ValueError("receipts must be a list")
+    ok, length, first_break = verify_chain(receipts)
+    if not ok:
+        raise ValueError("receipt chain is invalid at index %d" % first_break)
+    head = receipts[-1]["digest"] if receipts else GENESIS_PREV
+    return json.dumps({"head": head, "length": length,
+                       "payload_type": _DSSE_PAYLOAD_TYPE},
+                      sort_keys=True, separators=(",", ":")).encode()
+
+
 def sign_chain(receipts: List[Dict[str, Any]],
                key: Optional[bytes] = None,
                signer=None,
@@ -629,15 +642,13 @@ def sign_chain(receipts: List[Dict[str, Any]],
         backend); use this to plug in cosign/sigstore without changing the shape.
 
     The signature is DETACHED: it does not mutate the receipts, so the chain still
-    re-hashes identically. ``verify_signature`` checks it.
+    re-hashes identically. Invalid chains raise ValueError before invoking any
+    signer. ``verify_signature`` checks both chain integrity and payload binding.
     """
     import base64
     # The thing we sign: the chain's terminal digest (binds the whole chain) plus
     # length. DSSE PAE (pre-auth encoding) over a canonical payload.
-    head = receipts[-1]["digest"] if receipts else GENESIS_PREV
-    payload_obj = {"head": head, "length": len(receipts),
-                   "payload_type": _DSSE_PAYLOAD_TYPE}
-    payload = json.dumps(payload_obj, sort_keys=True, separators=(",", ":")).encode()
+    payload = _chain_signature_payload(receipts)
     pae = b"DSSEv1 %d %b %d %b" % (len(_DSSE_PAYLOAD_TYPE),
                                    _DSSE_PAYLOAD_TYPE.encode(),
                                    len(payload), payload)
@@ -676,23 +687,47 @@ def verify_signature(receipts: List[Dict[str, Any]],
                      key: Optional[bytes] = None) -> Dict[str, Any]:
     """Verify a DSSE-style detached envelope produced by sign_chain.
 
-    Returns {"signed": bool, "valid": bool, "reason": str}. An UNSIGNED envelope
-    is reported as signed=False, valid=True (honest: nothing to forge, chain still
-    stands on its hash). A SIGNED HMAC envelope is checked against the key (arg or
-    SZL_ATTEST_HMAC_KEY). Non-HMAC backends report signed=True, valid=None-style
-    'backend not verifiable here' rather than a false PASS.
+    Returns {"signed": bool, "valid": bool, "reason": str}. Every envelope must
+    bind its canonical payload to the verified supplied chain. A coherent UNSIGNED
+    envelope reports signed=False, valid=True for chain integrity only, without
+    signer authentication. A SIGNED HMAC envelope is also checked against the key
+    (arg or SZL_ATTEST_HMAC_KEY). Unsupported backends and malformed envelopes
+    fail closed. These checks do not establish measurement accuracy or identity.
     """
     import base64
-    if not envelope or envelope.get("signature_label") == LABEL_UNSIGNED \
-            or not envelope.get("signatures"):
-        return {"signed": False, "valid": True,
-                "reason": "honest-but-unsigned; integrity rests on the hash chain"}
+    signed = (isinstance(envelope, dict)
+              and (envelope.get("signature_label") == LABEL_SIGNED
+                   or bool(envelope.get("signatures"))))
     try:
-        payload = base64.b64decode(envelope["payload_b64"])
+        expected_payload = _chain_signature_payload(receipts)
+        if not isinstance(envelope, dict):
+            raise ValueError("signature envelope must be a dict")
+        label = envelope.get("signature_label")
+        signatures = envelope.get("signatures")
+        if label not in (LABEL_SIGNED, LABEL_UNSIGNED):
+            raise ValueError("signature_label must be SIGNED or UNSIGNED")
+        if not isinstance(signatures, list):
+            raise ValueError("signatures must be a list")
+        if label == LABEL_UNSIGNED and signatures:
+            raise ValueError("UNSIGNED envelope must not contain signatures")
+        if label == LABEL_SIGNED and len(signatures) != 1:
+            raise ValueError("SIGNED envelope must contain exactly one signature")
         ptype = envelope["payloadType"]
+        if ptype != _DSSE_PAYLOAD_TYPE:
+            raise ValueError("unexpected signature payloadType")
+        if not isinstance(envelope["payload_b64"], str):
+            raise ValueError("payload_b64 must be a base64 string")
+        payload = base64.b64decode(envelope["payload_b64"], validate=True)
+        if payload != expected_payload:
+            raise ValueError("signature payload does not bind the supplied chain")
+        if label == LABEL_UNSIGNED:
+            return {"signed": False, "valid": True,
+                    "reason": "verified chain integrity only; unsigned, no signer authentication"}
         pae = b"DSSEv1 %d %b %d %b" % (len(ptype), ptype.encode(),
-                                       len(payload), payload)
-        sig0 = envelope["signatures"][0]
+                                        len(payload), payload)
+        sig0 = signatures[0]
+        if not isinstance(sig0, dict):
+            raise ValueError("signature entry must be a dict")
         backend = sig0.get("backend")
         if backend != "hmac-sha256":
             return {"signed": True, "valid": False,
@@ -709,7 +744,7 @@ def verify_signature(receipts: List[Dict[str, Any]],
         return {"signed": True, "valid": ok,
                 "reason": "HMAC %s" % ("matches" if ok else "MISMATCH")}
     except Exception as e:
-        return {"signed": True, "valid": False, "reason": "verify error: %s" % e}
+        return {"signed": signed, "valid": False, "reason": "verify error: %s" % e}
 
 
 # ADDITIVE standards-interop layer (in-toto / SLSA-shaped statement + regulator

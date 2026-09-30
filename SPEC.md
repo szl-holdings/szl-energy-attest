@@ -121,6 +121,26 @@ means no break.
 
 ## 5. Signing (optional)
 
-DSSE signing is layered on by the caller when a real cosign key is present. Absent a
-key, a receipt is **honest-but-unsigned** — the hash chain still proves integrity and
-ordering. A receipt is never marked signed without a real signature.
+`sign_chain(receipts, key=..., signer=...)` first verifies the receipt list and
+raises `ValueError` on an invalid chain before invoking a signer. Its existing
+DSSE-style detached payload is the compact, sorted-key JSON object:
+`{"head": terminal_digest, "length": receipt_count, "payload_type":
+"application/vnd.szl.energy-attest.chain+json"}`. An empty list uses the genesis
+digest and length zero; this is an empty structural commitment, not execution.
+
+`verify_signature` re-walks the supplied chain and requires the exact decoded
+canonical payload above, with the expected outer `payloadType`. It rejects
+malformed base64, alternate/noncanonical payloads (including extra/duplicate
+fields), missing envelopes, unknown labels and inconsistent signature states.
+`UNSIGNED` requires an empty signature list; `SIGNED` requires exactly one entry.
+The emitted format is unchanged, but malformed or unbound inputs formerly accepted
+by the verifier now return `valid=False`.
+
+The stdlib verifier supports HMAC-SHA256 with the caller's key (or the configured
+`SZL_ATTEST_HMAC_KEY`); a caller-supplied backend is not automatically trusted or
+verified. Unsupported backends return `valid=False`. A coherent unsigned envelope
+returns `signed=False, valid=True` for chain integrity only, without signer
+authentication. Callers needing keyed authentication must require `signed=True`
+and `valid=True` and apply their own key policy. Hash integrity and HMAC key
+possession do not establish measurement accuracy, execution, or public signer
+identity. No signature is fabricated when a key or signer is absent.
