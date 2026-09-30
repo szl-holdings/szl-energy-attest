@@ -258,6 +258,24 @@ An example receipt body (`UNAVAILABLE`, from a CPU-only box):
 See **[SPEC.md](SPEC.md)** for the full field-by-field schema and the offline
 verification procedure.
 
+### Detached chain signature verification
+
+`sign_chain(receipts)` re-walks the supplied list before constructing its detached
+envelope; an invalid chain raises `ValueError` before any signer is called.
+`verify_signature(receipts, envelope, key=...)` verifies that chain and requires
+the envelope's canonical payload to match its terminal digest, length and payload
+type. A valid envelope for another chain cannot authenticate these receipts.
+Missing/malformed envelopes, contradictory signing states, noncanonical payloads
+and unsupported signature backends return `valid=False`.
+
+The emitted envelope format is unchanged. A coherent `UNSIGNED` envelope retains
+`signed=False, valid=True` for **chain integrity only**; it does not authenticate
+a signer. Callers requiring keyed authentication must require both `signed=True`
+and `valid=True` under their configured key policy. HMAC validates possession of
+that shared key, without proving a public signer identity or measurement accuracy.
+An empty chain can verify against its genesis/zero-length envelope, which is no
+evidence of execution or energy measurement.
+
 ---
 
 ## How the real capability fits together
