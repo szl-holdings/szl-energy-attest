@@ -56,6 +56,77 @@ inference-meter path, missing hardware evidence terminates as
 `mode="unmeasured"` with `joules: null`; the separate root receipt schema uses
 the `UNAVAILABLE` label.
 
+## The category: evidence, not estimation
+
+The energy-tooling field splits into **estimators** and **aggregate
+benchmarks** — nobody sells a **per-inference measured-joule receipt a buyer
+can verify independently**. That empty slot is this vertical's category.
+
+| Incumbent class | What it ships | Source |
+| --- | --- | --- |
+| Carbon **estimators** | model/attribute-driven CO₂ estimates from declared hardware (CodeCarbon, incl. its RAPL docs), or cloud-footprint assessment APIs (Boavizta) | [docs.codecarbon.io](https://docs.codecarbon.io/), [CodeCarbon RAPL](https://docs.codecarbon.io/latest/explanation/rapl/), [boavizta.org](https://boavizta.org/en/tools), [BoaviztAPI docs](https://doc.api.boavizta.org/Explanations/services/cloud/) |
+| **Measurement benchmarks** | empirical joules-per-inference across model/hardware configs, in aggregate leaderboards (ML.ENERGY: 46 models / 1,858 configs on H100/B200) | [ml.energy/leaderboard](https://ml.energy/leaderboard/), [v3.0 blog](https://ml.energy/blog/measurement/energy/diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30/), [NeurIPS paper](https://arxiv.org/html/2505.06371v2) |
+| **Hardware primitives** | Intel RAPL CPU counters; NVIDIA NVML GPU power/energy | [CodeCarbon RAPL](https://docs.codecarbon.io/latest/explanation/rapl/), [arXiv 2401.15985](https://arxiv.org/html/2401.15985v2), [NVML API ref](https://docs.nvidia.com/deploy/nvml-api/latest/pdf/NVML_API_Reference_Guide.pdf), [NVML device queries](https://docs.nvidia.com/deploy/nvml-api/api/group__nvmlDeviceQueries.html) |
+| **Energy-priced billing** | measured $/kWh inference billing — but **no signed, portable, per-request proof** (its portal shows billing, not verifiable receipts) | [Neuralwatt pricing](https://portal.neuralwatt.com/pricing), [launch post](https://www.linkedin.com/posts/neuralwatt_todaywerelaunchingneuralwattcloud-our-activity-7437858319295442944-vu2A), [portal](https://portal.neuralwatt.com/), [API docs](https://docs.neuralwatt.com/api/overview) |
+
+The dominant UX is leaderboards, dashboards, and $/kWh billing — **not
+per-request signed receipts**. Meanwhile inference now dominates lifecycle
+energy (>90%, [TokenPowerBench, arXiv 2512.03024](https://arxiv.org/html/2512.03024v1))
+and per-task energy varies by orders of magnitude by task and hardware
+([arXiv 2601.22076](https://arxiv.org/html/2601.22076v1)), with energy-based
+pricing and carbon-disclosure pressure growing ([Carbon Cost of Intelligence](https://assets.ctfassets.net/sejp9n42frnn/2y19H313jPKZFgRV0bYOOC/8565275be038c909a3994c2ceb1a14c7/whitepaper.pdf), [arXiv 2605.27309](https://arxiv.org/html/2605.27309)).
+
+**This vertical creates the missing object**: one signed, hash-chained,
+offline-verifiable joule receipt **per inference** (MEASURED via NVML where a
+GPU metering path exists; honest `UNAVAILABLE` / separately-labelled
+`ESTIMATED` where it does not — estimation never blends into measured), plus a
+bulk **daily-rollup receipt** chained to the per-inference ones — the artifact
+Neuralwatt-style $/kWh billing needs but no incumbent issues.
+
+### The v1 proxy (`src/energy_meter_proxy/`)
+
+A FastAPI proxy that wraps **any OpenAI-compatible endpoint**
+(`/v1/chat/completions`) and emits one receipt per call:
+
+```
+SZL_UPSTREAM_BASE=http://upstream:9000 \
+SZL_RECEIPT_DIR=/var/szl/receipts \
+SZL_SIGNING_KEY_PATH=/run/secrets/key.pem \        # optional: absence = UNSIGNED-honest
+uvicorn energy_meter_proxy.proxy:create_app --factory --port 8377
+```
+
+Each receipt carries: measured joules with an honest state machine
+(`MEASURED` only from a real NVML delta — energy counter, else trapezoidal
+power integral; `UNAVAILABLE` on CPU-only/sandboxed hosts; demo-only
+`ESTIMATED` in a **separate numeric field**), upstream-provided token counts
+(`UNAVAILABLE` label when the upstream omits `usage` — never invented), model
+id, proxy-side wall-clock latency, a carbon-intensity placeholder
+(`UNAVAILABLE` unless a grid-API key is configured via `SZL_GRID_PROVIDER` /
+`SZL_GRID_API_KEY`, in which case the value is REPORTED pass-through), and a
+**DSSE/ECDSA-P256 envelope** via the shared [szl-receipt](https://github.com/szl-holdings/szl-receipt)
+library — with an UNSIGNED-honest fallback when no key is present and an
+honest sig-note when the library is not installed at all. Receipts persist
+append-only with `fcntl.flock` + `fsync` before ACK (LOCAL durability only;
+remote durability is a separate, visibly pending concern).
+
+```
+# clearly-labelled SYNTHETIC demo (estimates only, never called measured):
+python -m energy_meter_proxy.demo /tmp/szl-demo-store
+
+# offline verification (no network):
+python -m energy_meter_proxy.verifier /var/szl/receipts --pubkey pub.pem
+# -> VERIFIED | FAIL on any tamper | INCOMPLETE (never PASS) on missing evidence
+```
+
+Honest fail-closed attestation rule (build directive 3 of the vertical
+brief): when energy cannot be measured, the receipt says `UNAVAILABLE` with
+verified provenance — it does **not** emit an estimate dressed as
+measurement; that is the measurement discipline of
+[ML.ENERGY's measurement ethos](https://ml.energy/blog/measurement/energy/diagnosing-inference-energy-consumption-with-the-mlenergy-leaderboard-v30/)
+applied to billing.
+
+---
+
 ## Product value without a novelty claim
 
 Energy tools expose different layers: counters, estimates, dashboards, and

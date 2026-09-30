@@ -25,6 +25,7 @@ gpu = ["pynvml>=11.0"]
 # Optional DSSE/ECDSA-P256 per-receipt signing via the shared szl-receipt lib.
 # Opt-in; the import is lazy so the stdlib-only core is unchanged without it.
 sign = ["szl-receipt>=0.2.0"]
+proxy = ["fastapi>=0.100", "uvicorn>=0.23", "httpx>=0.24"]
 test = ["pytest"]
 
 [project.urls]
@@ -36,6 +37,8 @@ Repository = "https://github.com/szl-holdings/szl-energy-attest"
 szl-energy-attest = "szl_energy_attest.cli:main"
 
 [tool.setuptools]
+package-dir = {"energy_meter_proxy" = "src/energy_meter_proxy"}
 # Includes the folded-in live inference metering subpackage (Wave D: absorbed
-# from the now-DEPRECATED governed-inference-meter repo).
-packages = ["szl_energy_attest", "szl_energy_attest.inference_meter"]
+# from the now-DEPRECATED governed-inference-meter repo) plus the v1 vertical
+# per-inference joule-receipt proxy (src/energy_meter_proxy).
+packages = ["szl_energy_attest", "szl_energy_attest.inference_meter", "energy_meter_proxy"]
