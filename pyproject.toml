@@ -32,6 +32,8 @@ test = ["pytest"]
 Homepage = "https://a-11-oy.com"
 Repository = "https://github.com/szl-holdings/szl-energy-attest"
 "Hugging Face" = "https://huggingface.co/SZLHOLDINGS"
+Issues = "https://github.com/szl-holdings/szl-energy-attest/issues"
+Changelog = "https://github.com/szl-holdings/szl-energy-attest/releases"
 
 [project.scripts]
 szl-energy-attest = "szl_energy_attest.cli:main"
@@ -42,3 +44,6 @@ package-dir = {"energy_meter_proxy" = "src/energy_meter_proxy"}
 # from the now-DEPRECATED governed-inference-meter repo) plus the v1 vertical
 # per-inference joule-receipt proxy (src/energy_meter_proxy).
 packages = ["szl_energy_attest", "szl_energy_attest.inference_meter", "energy_meter_proxy"]
+
+[tool.szl.release]
+import_names = ["energy_meter_proxy", "szl_energy_attest"] # wheel top-level import names; the release gate fails if the built wheel differs
