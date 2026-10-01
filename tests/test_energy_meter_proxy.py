@@ -1,17 +1,17 @@
 # SPDX-License-Identifier: Apache-2.0
 # © 2026 SZL Holdings · Stephen P. Lutar · ORCID 0009-0001-0110-4173
-"""Tests for the per-inference joule-receipt vertical (energy_meter_proxy)."""
+"""Tests for the per-inference joule-receipt vertical (szl_energy_attest.meter_proxy)."""
 import json
 import os
 
 import pytest
 
-from energy_meter_proxy import GENESIS_PREV, PREDICATE_TYPE, SPEC_VERSION
-from energy_meter_proxy.grid import fetch_carbon_context, LABEL_UNAVAILABLE
-from energy_meter_proxy.meter import EnergyState, measure_inference_energy
-from energy_meter_proxy.receipts import ReceiptIssuer, canonical_json, digest_body
-from energy_meter_proxy.rollup import build_daily_rollup
-from energy_meter_proxy.verifier import verify_store
+from szl_energy_attest.meter_proxy import GENESIS_PREV, PREDICATE_TYPE, SPEC_VERSION
+from szl_energy_attest.meter_proxy.grid import fetch_carbon_context, LABEL_UNAVAILABLE
+from szl_energy_attest.meter_proxy.meter import EnergyState, measure_inference_energy
+from szl_energy_attest.meter_proxy.receipts import ReceiptIssuer, canonical_json, digest_body
+from szl_energy_attest.meter_proxy.rollup import build_daily_rollup
+from szl_energy_attest.meter_proxy.verifier import verify_store
 
 
 def _energy_unavailable():

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "szl-energy-attest"
-version = "0.3.1"
+version = "0.3.2"
 description = "Attestable energy receipts for governed compute — MEASURED-NVML joules, cheapest-watt placement, hash-chained signable receipts."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -44,11 +44,10 @@ Changelog = "https://github.com/szl-holdings/szl-energy-attest/releases"
 szl-energy-attest = "szl_energy_attest.cli:main"
 
 [tool.setuptools]
-package-dir = {"energy_meter_proxy" = "src/energy_meter_proxy"}
 # Includes the folded-in live inference metering subpackage (Wave D: absorbed
 # from the now-DEPRECATED governed-inference-meter repo) plus the v1 vertical
-# per-inference joule-receipt proxy (src/energy_meter_proxy).
-packages = ["szl_energy_attest", "szl_energy_attest.inference_meter", "energy_meter_proxy"]
+# per-inference joule-receipt proxy (szl_energy_attest/meter_proxy, namespaced in 0.3.2).
+packages = ["szl_energy_attest", "szl_energy_attest.inference_meter", "szl_energy_attest.meter_proxy"]
 
 [tool.szl.release]
-import_names = ["energy_meter_proxy", "szl_energy_attest"] # wheel top-level import names; the release gate fails if the built wheel differs
+import_names = ["szl_energy_attest"] # wheel top-level import names; the release gate fails if the built wheel differs
