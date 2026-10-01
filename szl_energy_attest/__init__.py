@@ -42,7 +42,7 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
-__version__ = "0.3.0"
+__version__ = "0.3.2"
 
 GENESIS_PREV = "0" * 64
 

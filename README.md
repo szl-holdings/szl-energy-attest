@@ -85,7 +85,7 @@ GPU metering path exists; honest `UNAVAILABLE` / separately-labelled
 bulk **daily-rollup receipt** chained to the per-inference ones — the artifact
 Neuralwatt-style $/kWh billing needs but no incumbent issues.
 
-### The v1 proxy (`src/energy_meter_proxy/`)
+### The v1 proxy (`szl_energy_attest/meter_proxy/`)
 
 A FastAPI proxy that wraps **any OpenAI-compatible endpoint**
 (`/v1/chat/completions`) and emits one receipt per call:
@@ -94,7 +94,7 @@ A FastAPI proxy that wraps **any OpenAI-compatible endpoint**
 SZL_UPSTREAM_BASE=http://upstream:9000 \
 SZL_RECEIPT_DIR=/var/szl/receipts \
 SZL_SIGNING_KEY_PATH=/run/secrets/key.pem \        # optional: absence = UNSIGNED-honest
-uvicorn energy_meter_proxy.proxy:create_app --factory --port 8377
+uvicorn szl_energy_attest.meter_proxy.proxy:create_app --factory --port 8377
 ```
 
 Each receipt carries: measured joules with an honest state machine
@@ -113,10 +113,10 @@ remote durability is a separate, visibly pending concern).
 
 ```
 # clearly-labelled SYNTHETIC demo (estimates only, never called measured):
-python -m energy_meter_proxy.demo /tmp/szl-demo-store
+python -m szl_energy_attest.meter_proxy.demo /tmp/szl-demo-store
 
 # offline verification (no network):
-python -m energy_meter_proxy.verifier /var/szl/receipts --pubkey pub.pem
+python -m szl_energy_attest.meter_proxy.verifier /var/szl/receipts --pubkey pub.pem
 # -> VERIFIED | FAIL on any tamper | INCOMPLETE (never PASS) on missing evidence
 ```
 
