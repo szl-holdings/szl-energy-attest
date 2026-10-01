@@ -30,5 +30,6 @@ jobs:
         run: |
           pip install pytest
           pip install "git+https://github.com/szl-holdings/szl-receipt.git@v0.2.0"
+          pip install -e .
       - name: Run pytest
         run: pytest -q
