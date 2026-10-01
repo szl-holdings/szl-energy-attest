@@ -1,3 +1,5 @@
+[![PyPI](https://img.shields.io/pypi/v/szl-energy-attest)](https://pypi.org/project/szl-energy-attest/) [![Python](https://img.shields.io/pypi/pyversions/szl-energy-attest)](https://pypi.org/project/szl-energy-attest/)
+
 ---
 license: apache-2.0
 tags:
