@@ -79,7 +79,7 @@ def _shared():
         raise ImportError(
             "szl_energy_attest.inference_meter canonical szl-receipt output requires the "
             "shared 'szl-receipt' library (pip install "
-            "'szl-energy-attest[sign]', or pip install szl-receipt-dsse). "
+            "'szl-energy-attest[sign]', or pip install szl-receipt). "
             "Underlying import error: %r" % (exc,)
         ) from exc
     return _s
