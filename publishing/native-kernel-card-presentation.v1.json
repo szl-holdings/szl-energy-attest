@@ -1,0 +1,59 @@
+{
+  "schema": "szl.source-card-presentation/v1",
+  "source_repository": "szl-holdings/szl-energy-attest",
+  "source_revision": "1520b4b50ef957e58628a64a205edb46cdc6348e",
+  "shared_mark_dependency": {
+    "url": "https://raw.githubusercontent.com/szl-holdings/.github/main/profile/assets/szl/logos/szl_mark_holographic.svg",
+    "source_pr": "https://github.com/szl-holdings/.github/pull/864",
+    "source_revision": "40cc2b57a57934a048bb980a023f8a8e533c15e5"
+  },
+  "publication_boundary": "Source review only. The existing closed controller remains the publisher; no new writer, direct Hub write, code-pin update, ABI/build mutation or runtime qualification is authorized by this presentation map.",
+  "central_apply_allowed": false,
+  "cards": [
+    {
+      "kind": "kernels",
+      "repo_id": "SZLHOLDINGS/governed-inference-meter",
+      "source_repository": "szl-holdings/szl-energy-attest",
+      "source_path": "hf-kernels/governed-inference-meter/README.md",
+      "source_url": "https://github.com/szl-holdings/szl-energy-attest/blob/1520b4b50ef957e58628a64a205edb46cdc6348e/hf-kernels/governed-inference-meter/README.md",
+      "publisher_repository": "szl-holdings/.github",
+      "publisher_workflow": ".github/workflows/hf-kernel-card-publish-v2.yml",
+      "publisher_source_url": "https://github.com/szl-holdings/.github/blob/40cc2b57a57934a048bb980a023f8a8e533c15e5/.github/workflows/hf-kernel-card-publish-v2.yml",
+      "publication_trigger": "EXISTING_CONTROLLER_SCHEDULE_OR_MANUAL_OR_CONTROLLER_WORKFLOW_PUSH",
+      "source_repository_push_directly_triggers_publisher": false,
+      "publisher_mutation_paths": [
+        "README.md",
+        "contract.json"
+      ],
+      "contract_path": "hf-kernels/governed-inference-meter/contract.json",
+      "contract_sha256": "2e03782473b523fc7cb834873d94f977bb5e9fc63a7026b32de6ed0d8fa68d81",
+      "contract_bytes_unchanged": true,
+      "license": "apache-2.0",
+      "license_source": "hf-kernels/governed-inference-meter/contract.json",
+      "contract_kernel_revision": "6d546bfc6591b44ae5eb57d1209678454e52a3f5",
+      "required_trust_remote_code": true,
+      "observed_hub_revision": "86ad2ff763127e3400a7c5667003ed9cc9c43e6c",
+      "observed_at": "2026-10-04T16:11:35.236461+00:00",
+      "observed_hub_card_sha256": "0ac554da46d0cdb30ae89175dc5d8e5d1f1d2a997852ce454d96afea83fcb3ec",
+      "original_body_sha256": "0ac554da46d0cdb30ae89175dc5d8e5d1f1d2a997852ce454d96afea83fcb3ec",
+      "before_sha256": "0ac554da46d0cdb30ae89175dc5d8e5d1f1d2a997852ce454d96afea83fcb3ec",
+      "output_sha256": "f7c177f5210931c8b41dc1d2f57203df67e6e8e79960bd9ed1db10e4c41e92d5",
+      "after_sha256": "f7c177f5210931c8b41dc1d2f57203df67e6e8e79960bd9ed1db10e4c41e92d5",
+      "original_body_preserved": true,
+      "front_matter_present": false,
+      "front_matter_state": "ABSENT_UNCHANGED",
+      "artifact_type": "kernel_library",
+      "artifact": "Inference-metering software kernel",
+      "stage": "Retained compatibility contract",
+      "visible_limits": [
+        "Use the exact Kernel Hub revision in the retained contract below. A card update does not change that code pin.",
+        "Loading the kernel executes repository code and requires explicit trust. Inspect the immutable revision before enabling `trust_remote_code=True`.",
+        "Existing builds and qualification evidence stay unchanged; this presentation adds no runtime, energy or performance measurement."
+      ],
+      "primary_try_url": null,
+      "explore_url": "https://huggingface.co/spaces/SZLHOLDINGS/szl-command-lab",
+      "runtime_or_provider_promotion": false,
+      "disposition": "READY_SOURCE_REVIEW"
+    }
+  ]
+}
