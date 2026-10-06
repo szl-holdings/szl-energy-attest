@@ -1,19 +1,5 @@
 [![PyPI](https://img.shields.io/pypi/v/szl-energy-attest)](https://pypi.org/project/szl-energy-attest/) [![Python](https://img.shields.io/pypi/pyversions/szl-energy-attest)](https://pypi.org/project/szl-energy-attest/) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/szl-holdings/szl-energy-attest/badge)](https://scorecard.dev/viewer/?uri=github.com/szl-holdings/szl-energy-attest)
 
----
-license: apache-2.0
-tags:
-  - energy
-  - governance
-  - provenance
-  - software
-  - measurement
-  - receipts
-language:
-  - en
-pretty_name: Attestable Energy Receipts for Governed Compute
----
-
 > **SZL Holdings** · Doctrine v11 · Λ = Conjecture 1 (advisory, never "green"/theorem) · canonical [a-11-oy.com](https://a-11-oy.com)
 
 # szl_energy_attest — attestable energy receipts for governed compute
