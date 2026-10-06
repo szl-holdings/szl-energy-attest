@@ -1,3 +1,14 @@
+---
+license: apache-2.0
+library_name: kernels
+tags:
+- kernel
+- szl-holdings
+szl:
+  source_repo: szl-holdings/szl-energy-attest
+  proof_url: https://github.com/szl-holdings/szl-energy-attest
+---
+
 <p><a href="https://huggingface.co/spaces/SZLHOLDINGS/szl-command-lab"><img src="https://raw.githubusercontent.com/szl-holdings/.github/main/profile/assets/szl/logos/szl_mark_holographic.svg" alt="SZL Holdings" width="112" /></a></p>
 
 # Governed Inference Meter
