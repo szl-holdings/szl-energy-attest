@@ -95,7 +95,9 @@ def create_app(
                                 detail="SZL_UPSTREAM_BASE not configured; "
                                        "refusing to fabricate an inference")
         payload = await request.json()
-        requester = (request.headers.get("authorization") or "")[:64] or None
+        # No verified caller identity is available here. Keep the issuer's
+        # anonymous default; credentials and other client-supplied headers
+        # must never become durable receipt attribution.
 
         def _call() -> Dict[str, Any]:
             resp = client.post(upstream + "/v1/chat/completions", json=payload)
@@ -120,7 +122,6 @@ def create_app(
             energy=em.as_receipt_energy(),
             carbon=carbon,
             latency_seconds=latency,
-            requester=requester,
         )
         out = JSONResponse(content=response_data)
         out.headers["x-szl-receipt-id"] = record["body"]["receipt_id"]

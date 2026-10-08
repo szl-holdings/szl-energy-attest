@@ -30,6 +30,8 @@ jobs:
         run: |
           pip install pytest
           pip install "git+https://github.com/szl-holdings/szl-receipt.git@v0.2.0"
-          pip install -e .
+          pip install -e ".[proxy]"
       - name: Run pytest
-        run: pytest -q
+        run: |
+          python -c "from szl_energy_attest.meter_proxy.proxy import _HAVE_WEB; assert _HAVE_WEB, 'Proxy regression dependencies are unavailable'"
+          pytest -q
