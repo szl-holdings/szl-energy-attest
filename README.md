@@ -4,6 +4,19 @@
 
 # szl_energy_attest — attestable energy receipts for governed compute
 
+<!-- szl:header v1 -->
+<!-- Native identity: szl-brand@4309f6fce89179331b0b3ed8c99494e76c5be256; Orbit v2 icon. -->
+<p>
+  <a href="https://github.com/szl-holdings">
+    <img src="https://raw.githubusercontent.com/szl-holdings/szl-brand/4309f6fce89179331b0b3ed8c99494e76c5be256/kit/logos/orbit-v2/suite/szl-icon-32.svg" alt="SZL Holdings — Orbit v2" width="32" height="32" />
+  </a>
+</p>
+
+**Control before action. Evidence after.**
+
+[Product](https://a-11-oy.com) · [Proof](https://a11oy.net) · [GitHub organization](https://github.com/szl-holdings)
+<!-- /szl:header -->
+
 > **Canonical source.** This GitHub repository is the source of truth for the energy-attestation artifact and vendors the runnable energy core under [`energy_core/`](energy_core/), co-located with the wrapped measurement path. It is real, tested, and downloadable for direct consumption. **Note on the flagship:** the a11oy governed substrate at [a-11-oy.com](https://a-11-oy.com) currently serves its *own* inline energy implementation (`szl_joules_truth.py` / `szl_energy_operator.py`) under `/api/a11oy/v1/energy/*`; this package is the canonical kernel available for direct use — it is **not yet** the flagship's served code path.
 
 > **📦 Canonical energy package (Wave D consolidation).** This repo is the **canonical SZL energy package**. The former `szl-holdings/governed-inference-meter` has been **folded in** here: its *live inference metering* code — the NVML `EnergyMeter` (hardware energy counter **+ power-integral / trapezoidal fallback**), an advisory policy gate, and the `meter()` / `metered()` inference wrappers that emit tokens-per-joule hash-chained receipts — now lives under [`szl_energy_attest.inference_meter`](./szl_energy_attest/inference_meter). The meter-specific attestation, receipt-chain hardening, and PCGI adapters are also retained there for import continuity; the root package's energy receipt is a **different schema**, so parity is not invented. File-level source and destination hashes are recorded in [`MIGRATION_PROVENANCE.json`](./MIGRATION_PROVENANCE.json). `governed-inference-meter` is **DEPRECATED**, not deleted, and archiving remains a later owner decision. Λ = **Conjecture 1** (advisory) is preserved verbatim; no conjecture is upgraded to proven.
