@@ -7,13 +7,36 @@ tags:
   - receipts
   - source-pointer
   - no-implementation-here
+szl:
+  source_repo: szl-holdings/szl-energy-attest
+  proof_url: https://github.com/szl-holdings/szl-energy-attest/blob/2cc3866d2bbc303b06822151f13926bac5a0ca76/HUB_MIRROR_STATUS.json
+  artifact_class: SOURCE_POINTER
+  lifecycle: INFORMATIONAL_METADATA_ONLY
 ---
 
-# szl-energy-attest
+<p><a href="https://huggingface.co/spaces/SZLHOLDINGS/szl-command-lab"><img src="https://raw.githubusercontent.com/szl-holdings/.github/main/profile/assets/szl/logos/szl_mark_holographic.svg" alt="SZL Holdings" width="112" /></a></p>
+
+# SZL Energy Attest
+
+Find the maintained source, migration records, and use boundaries for energy-aware inference receipts.
+
+**Artifact:** Source pointer · **Stage:** Informational metadata only
+
+[Explore in Command Lab](https://huggingface.co/spaces/SZLHOLDINGS/szl-command-lab) · [Build from source](https://github.com/szl-holdings/szl-energy-attest) · [Mirror evidence](https://github.com/szl-holdings/szl-energy-attest/blob/2cc3866d2bbc303b06822151f13926bac5a0ca76/HUB_MIRROR_STATUS.json)
+
+## Before you use it
 
 > **SOURCE POINTER · HUB MIRROR EMPTY · NOT AN INSTALLABLE IMPLEMENTATION**
 >
 > This Hugging Face repository is a public pointer to the canonical `szl-energy-attest` source. The canonical source's `HUB_MIRROR_STATUS.json` records this Hub artifact as `MIRROR_EMPTY` on 2026-09-04. Do not infer that package files, tests, a Kernel Hub loader, or a runnable implementation are published here.
+
+## Choose the right artifact
+
+| Your purpose | Where to go | Boundary |
+| --- | --- | --- |
+| Start an integration | [Canonical Energy Attest source](https://github.com/szl-holdings/szl-energy-attest) | Review source installation, tests, and hardware requirements. This Hub repository contains no installable implementation. |
+| Maintain an existing kernel integration | [Retained native kernel contract](https://github.com/szl-holdings/szl-energy-attest/blob/2cc3866d2bbc303b06822151f13926bac5a0ca76/hf-kernels/governed-inference-meter/README.md) | Follow its exact Kernel Hub code pin and explicit trust requirement. The native kernel has its own revision history. |
+| Trace the predecessor | [Migration evidence](https://github.com/szl-holdings/szl-energy-attest/blob/2cc3866d2bbc303b06822151f13926bac5a0ca76/MIGRATION_PROVENANCE.json) | The deprecated model-namespace mirror is historical; its examples are not new integration guidance. |
 
 ## Canonical implementation
 
