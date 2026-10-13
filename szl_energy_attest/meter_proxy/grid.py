@@ -86,7 +86,10 @@ def fetch_carbon_context(env: Optional[Dict[str, str]] = None) -> Dict[str, Any]
         with urllib.request.urlopen(req, timeout=_TIMEOUT_S) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except Exception as exc:  # noqa: BLE001 - degrade honestly, never raise
-        return unavailable_block("grid signal fetch failed: %s: %s" % (type(exc).__name__, exc))
+        # Record the failure class only. This block is persisted in every
+        # receipt and returned by GET /receipts/{seq}; exception text can echo
+        # provider URLs, network detail or the outbound credential header.
+        return unavailable_block("grid signal fetch failed: %s" % type(exc).__name__)
 
     value: Optional[float] = None
     if provider == "electricity_maps":
