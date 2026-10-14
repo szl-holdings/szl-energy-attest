@@ -4,7 +4,43 @@ Released versions are published to PyPI from GitHub Releases tagged `v<version>`
 (see `.github/workflows/publish-pypi.yml`). Entries before 0.3.3 were recorded only
 in GitHub Release notes.
 
-## 0.3.3 (unreleased)
+## 0.3.4 (unreleased)
+
+### Changed: meter-proxy verifier (`szl_energy_attest.meter_proxy.verifier`)
+
+- **Rollups are bound to their own signed bodies.** The verifier checked a
+  rollup's envelope signature but never compared the envelope payload with the
+  rollup body, so a valid envelope from another rollup, or from a per-inference
+  receipt, verified on an edited rollup. One shared check now applies to
+  receipts and rollups: `payloadType` must be `application/vnd.szl.receipt+json`,
+  the payload must be strict base64 of exactly the bytes `szl-receipt` signs for
+  that body, the advisory envelope `digest` must match, and `signed` must be a
+  boolean consistent with the signature field. Receipt and rollup bodies must
+  also carry their own kind, so neither can be filed as the other.
+- **Rollups are recomputed from their members.** Each listed member must be a
+  verified receipt of the rollup's date, listed once, in chain order, and the
+  stored body must equal the rollup those members produce: counts, measured and
+  estimated sums, labels, kWh, first/last member and no extra fields. Edited
+  aggregates with a recomputed outer digest now fail.
+- **Unsigned evidence is no longer reported as `VERIFIED`. Backward-incompatible.**
+  `VERIFIED` now means every receipt and rollup signature verified against the
+  supplied public key. An intact store with any `unsigned-honest`, `UNCAPPED`
+  (no envelope) or `SIGNATURE-UNCHECKED` (no key, or no `szl-receipt` at verify
+  time) record is `INTEGRITY-ONLY`. If a key was supplied, it is
+  `UNAUTHENTICATED` instead. A signed store checked without a key used to be
+  reported as `FAIL`; it is now `INTEGRITY-ONLY`. The CLI exits `0` only for
+  `VERIFIED`, `1` for `FAIL`/`INCOMPLETE`, `3` for `UNAUTHENTICATED` and `4` for
+  `INTEGRITY-ONLY`. Scripts that accepted exit `0` for unsigned stores must now
+  accept `4` explicitly.
+- The result adds `authentication_required`, `uncapped`, `signature_unchecked`,
+  `rollup_signatures` and a per-rollup `rollups` list with member signature
+  states and `assurance`. Existing counters are unchanged.
+- Receipts with non-ASCII body text verify. The old check compared the envelope
+  payload with the ASCII-escaped hashing form, which `szl-receipt` never signs.
+- Malformed store content (a non-JSON line, a non-object record, a malformed
+  member energy block) is a `FAIL` instead of an exception.
+
+## 0.3.3 (2026-10-13)
 
 Security release for the meter proxy (`szl_energy_attest.meter_proxy`). Upgrade if
 you run the proxy. No other public API changes.

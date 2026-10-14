@@ -24,23 +24,28 @@ from typing import Any, Dict, List, Optional, Union
 from . import GENESIS_PREV, SPEC_VERSION
 from .receipts import _sign_envelope, digest_body
 
-_ROLLUP_PREDICATE = "https://a-11-oy.com/attest/energy-daily-rollup/v1"
+ROLLUP_PREDICATE_TYPE = "https://a-11-oy.com/attest/energy-daily-rollup/v1"
+_ROLLUP_PREDICATE = ROLLUP_PREDICATE_TYPE  # pre-0.3.4 private name, kept
+ROLLUP_KIND = "energy-daily-rollup"
+
+_DOCTRINE = ("measured, estimated, and unavailable energy are accounted "
+             "SEPARATELY; an estimate is never promoted into the "
+             "measured sum")
 
 
-def build_daily_rollup(
-    records: List[Dict[str, Any]],
+def rollup_body(
+    members: List[Dict[str, Any]],
     *,
-    store_dir: str,
-    for_date: Optional[str] = None,  # YYYY-MM-DD, defaults to today (UTC)
-    private_key_pem: Optional[Union[str, bytes]] = None,
-    rollups_file: str = "rollups.jsonl",
+    day: str,
+    prev_rollup: str,
 ) -> Dict[str, Any]:
-    """Aggregate one UTC day's receipts into one signed, chained rollup."""
-    day = for_date or date.today().strftime("%Y-%m-%d")
-    members = [
-        r for r in records
-        if (r.get("body", {}).get("issued_at") or "").startswith(day)
-    ]
+    """The exact rollup body for *members* (receipt records, chain order).
+
+    Pure function of its inputs. ``build_daily_rollup`` uses it to issue a
+    rollup, and the offline verifier uses it to recompute a stored rollup from
+    the member receipts it lists, so the aggregates cannot drift from the
+    members.
+    """
     digests = [r["digest"] for r in members]
 
     measured = [r for r in members
@@ -62,20 +67,10 @@ def build_daily_rollup(
         if isinstance(r["body"]["energy"].get("estimated_joules"), (int, float))
     ) if estimated else None
 
-    path = os.path.join(store_dir, rollups_file)
-    prev_rollups: List[Dict[str, Any]] = []
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if line:
-                    prev_rollups.append(json.loads(line))
-    prev_digest = prev_rollups[-1]["digest"] if prev_rollups else GENESIS_PREV
-
-    body: Dict[str, Any] = {
+    return {
         "spec_version": SPEC_VERSION,
-        "predicate_type": _ROLLUP_PREDICATE,
-        "kind": "energy-daily-rollup",
+        "predicate_type": ROLLUP_PREDICATE_TYPE,
+        "kind": ROLLUP_KIND,
         "date": day,
         "receipt_count": len(members),
         "counts": {
@@ -93,11 +88,37 @@ def build_daily_rollup(
         "member_digests": digests,
         "first_member_digest": digests[0] if digests else None,
         "last_member_digest": digests[-1] if digests else None,
-        "prev_rollup": prev_digest,
-        "doctrine": ("measured, estimated, and unavailable energy are accounted "
-                     "SEPARATELY; an estimate is never promoted into the "
-                     "measured sum"),
+        "prev_rollup": prev_rollup,
+        "doctrine": _DOCTRINE,
     }
+
+
+def build_daily_rollup(
+    records: List[Dict[str, Any]],
+    *,
+    store_dir: str,
+    for_date: Optional[str] = None,  # YYYY-MM-DD, defaults to today (UTC)
+    private_key_pem: Optional[Union[str, bytes]] = None,
+    rollups_file: str = "rollups.jsonl",
+) -> Dict[str, Any]:
+    """Aggregate one UTC day's receipts into one signed, chained rollup."""
+    day = for_date or date.today().strftime("%Y-%m-%d")
+    members = [
+        r for r in records
+        if (r.get("body", {}).get("issued_at") or "").startswith(day)
+    ]
+
+    path = os.path.join(store_dir, rollups_file)
+    prev_rollups: List[Dict[str, Any]] = []
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    prev_rollups.append(json.loads(line))
+    prev_digest = prev_rollups[-1]["digest"] if prev_rollups else GENESIS_PREV
+
+    body = rollup_body(members, day=day, prev_rollup=prev_digest)
     record: Dict[str, Any] = {"body": body, "digest": digest_body(body)}
     env = _sign_envelope(body, private_key_pem)
     if env is None:

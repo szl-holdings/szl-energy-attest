@@ -116,8 +116,23 @@ python -m szl_energy_attest.meter_proxy.demo /tmp/szl-demo-store
 
 # offline verification (no network):
 python -m szl_energy_attest.meter_proxy.verifier /var/szl/receipts --pubkey pub.pem
-# -> VERIFIED | FAIL on any tamper | INCOMPLETE (never PASS) on missing evidence
 ```
+
+The verifier keeps integrity and authenticity apart and reports one state:
+
+| State | Meaning | Exit |
+| --- | --- | --- |
+| `VERIFIED` | every receipt and rollup re-hashes and chains, every envelope carries the exact bytes of its own body, every rollup equals what its listed member receipts produce, **and** every receipt and rollup signature verified against `--pubkey` | `0` |
+| `INTEGRITY-ONLY` | all integrity checks hold, but some record is `unsigned-honest`, `UNCAPPED` (no envelope) or `SIGNATURE-UNCHECKED` (no key or no `szl-receipt` at verify time), and no key was given | `4` |
+| `UNAUTHENTICATED` | as `INTEGRITY-ONLY`, but `--pubkey` was given, which requires every record to authenticate | `3` |
+| `FAIL` | any tamper: digest, chain, envelope-to-body binding, receipt/rollup kind swap, bad signature, rollup member or aggregate mismatch, malformed record | `1` |
+| `INCOMPLETE` | no evidence in the store (never PASS) | `1` |
+
+Each rollup is also reported with its own signature state, the signature
+states of its members, and `assurance: authenticated` only when the rollup and
+every member are signed-verified. The verifier proves a rollup is consistent
+with the members it lists; it does not prove the issuer listed every receipt
+of that day.
 
 Honest fail-closed attestation rule (build directive 3 of the vertical
 brief): when energy cannot be measured, the receipt says `UNAVAILABLE` with
