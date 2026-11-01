@@ -31,18 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from . import GENESIS_PREV
 from .receipts import canonical_json, digest_body
-
-
-def _load_jsonl(path: str) -> List[Dict[str, Any]]:
-    if not os.path.exists(path):
-        return []
-    out = []
-    with open(path, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if line:
-                out.append(json.loads(line))
-    return out
+from ._store import read_records, validate_chain
 
 
 def _verify_signature(record: Dict[str, Any],
@@ -80,8 +69,20 @@ def verify_store(store_dir: str,
         "details": [],
     }
 
-    receipts = _load_jsonl(os.path.join(store_dir, "receipts.jsonl"))
-    rollups = _load_jsonl(os.path.join(store_dir, "rollups.jsonl"))
+    try:
+        # Atomic replacement gives each read a complete immutable file snapshot.
+        # Read rollups first: any subsequently read receipt snapshot contains all
+        # members of committed rollups when writers follow the store protocol.
+        rollups = read_records(os.path.join(store_dir, "rollups.jsonl"))
+        receipts = read_records(os.path.join(store_dir, "receipts.jsonl"))
+        validate_chain(receipts, link="prev", genesis=GENESIS_PREV,
+                       digest=digest_body, sequence=True)
+        validate_chain(rollups, link="prev_rollup", genesis=GENESIS_PREV,
+                       digest=digest_body)
+    except (OSError, ValueError, TypeError) as exc:
+        result["state"] = "FAIL"
+        result["details"].append("FAIL: invalid durable store: " + str(exc))
+        return result
     if not receipts and not rollups:
         result["state"] = "INCOMPLETE"
         result["details"].append("no receipts found in store — INCOMPLETE, never PASS")
