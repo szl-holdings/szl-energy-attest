@@ -421,3 +421,27 @@ The deprecated meter's immutable loading contract remains under
 [`hf-kernels/governed-inference-meter`](hf-kernels/governed-inference-meter/README.md).
 
 *Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>*
+
+
+### Local receipt-store transaction boundary
+
+Meter-proxy writers now take a stable `*.jsonl.lock` lock before reading the
+chain parent. They validate the existing digest/sequence chain, write a complete
+same-directory temporary snapshot, fsync it, atomically replace the JSONL file,
+and fsync the directory before acknowledging local durability. Incomplete final
+lines, duplicate JSON keys, non-finite numbers and damaged chains are refused;
+no automatic truncation or repair is attempted. A repeated UTC-day rollup returns
+the existing receipt only when its members and accounting are identical. Changed
+members for an already sealed day require operator reconciliation.
+
+Rollout requires an operator-owned local POSIX directory and **all writers to be
+stopped and upgraded together**; old append-mode writers do not share this lock.
+Snapshots are owner-readable/writable (0600). Each write rewrites the current
+store, so qualify size and throughput before production use. Back up and verify
+the store before rollout; retain new files and locks when rolling back code.
+Do not mix old and new writers. A pre-replace failure preserves the old file. A
+directory-fsync failure after replacement reports an error with an ambiguous
+commit outcome: reload and reconcile before retrying. There is no remote-sync,
+network-filesystem, crash-proof hardware, or signed-production claim here.
+
+Offline storage regressions: `python -m pytest -q tests/test_store_failures.py`.

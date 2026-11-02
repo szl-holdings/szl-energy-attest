@@ -12,7 +12,8 @@ Each inference through the proxy emits ONE receipt:
     the shared ``szl-receipt`` library when a key is present, UNSIGNED-honest
     (``signed=False``) without one, and honestly *absent* with an explanatory
     note when ``szl-receipt`` is not installed;
-  * append-only JSONL persistence with ``fcntl.flock`` + ``fsync`` before ACK
+  * logically append-only JSONL snapshots with a stable ``flock`` + atomic
+    replacement + ``fsync`` before ACK
     (Flight Recorder law: LOCAL durability acknowledged; remote is a separate,
     visibly PENDING_SYNC concern — this package only ever claims local).
 
@@ -22,7 +23,7 @@ signature adds authenticity when a key exists. Both are checked offline by
 """
 from __future__ import annotations
 
-import fcntl
+from copy import deepcopy
 import hashlib
 import json
 import os
@@ -32,6 +33,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 from . import GENESIS_PREV, PREDICATE_TYPE, SPEC_VERSION
+from ._store import locked_store, read_records, validate_chain, write_records
 
 _ORGAN = "szl-energy-attest-proxy"
 
@@ -42,7 +44,7 @@ def _utcnow() -> str:
 
 def canonical_json(body: Dict[str, Any]) -> str:
     """Deterministic JSON used for hashing AND as the DSSE payload basis."""
-    return json.dumps(body, sort_keys=True, separators=(",", ":"))
+    return json.dumps(body, sort_keys=True, separators=(",", ":"), allow_nan=False)
 
 
 def digest_body(body: Dict[str, Any]) -> str:
@@ -80,18 +82,20 @@ class ReceiptIssuer:
         self._path = os.path.join(store_dir, receipts_file)
         self._priv = private_key_pem
         self._signing_importable = _sign_envelope({"probe": True}, None) is not None
-        # Resume the chain from the store if it already exists.
-        self._records: List[Dict[str, Any]] = []
-        if os.path.exists(self._path):
-            with open(self._path, "r", encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if line:
-                        self._records.append(json.loads(line))
+        with locked_store(self._path):
+            self._records = self._load()
+
+    def _load(self):
+        records = read_records(self._path)
+        validate_chain(records, link="prev", genesis=GENESIS_PREV,
+                       digest=digest_body, sequence=True)
+        return records
 
     @property
     def records(self) -> List[Dict[str, Any]]:
-        return list(self._records)
+        with self._lock, locked_store(self._path):
+            self._records = self._load()
+            return deepcopy(self._records)
 
     def issue(
         self,
@@ -111,7 +115,8 @@ class ReceiptIssuer:
         provenance: str = "live",
     ) -> Dict[str, Any]:
         """Build, chain, sign, durably persist, and return one receipt."""
-        with self._lock:
+        with self._lock, locked_store(self._path):
+            self._records = self._load()
             prev = self._records[-1]["digest"] if self._records else GENESIS_PREV
             seq = len(self._records)
             body: Dict[str, Any] = {
@@ -126,10 +131,10 @@ class ReceiptIssuer:
                 "token_label": ("MEASURED" if isinstance(tokens_in, int)
                                  and isinstance(tokens_out, int)
                                  else "UNAVAILABLE"),
-                "energy": energy,          # state MEASURED/UNAVAILABLE(+demo ESTIMATED)
+                "energy": deepcopy(energy),          # state MEASURED/UNAVAILABLE(+demo ESTIMATED)
                 "latency_seconds": round(float(latency_seconds), 6),
                 "latency_label": "MEASURED-WALLCLOCK-PROXY-SIDE",
-                "carbon": carbon,          # REPORTED pass-through or UNAVAILABLE
+                "carbon": deepcopy(carbon),          # REPORTED pass-through or UNAVAILABLE
                 "policy_decision": policy_decision,
                 "policy_reason": policy_reason,
                 "requester": requester or "anonymous",
@@ -152,22 +157,10 @@ class ReceiptIssuer:
                 record["signature_note"] = None if env.get("signed") else (
                     "UNSIGNED-honest: no signing key configured"
                 )
-            self._append_durable(record)
+            write_records(self._path, [*self._records, record])
             self._records.append(record)
-            return record
-
-    def _append_durable(self, record: Dict[str, Any]) -> None:
-        """flock + write + fsync before returning: LOCAL durability only."""
-        line = json.dumps(record, sort_keys=True) + "\n"
-        with open(self._path, "a", encoding="utf-8") as fh:
-            fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
-            try:
-                fh.write(line)
-                fh.flush()
-                os.fsync(fh.fileno())
-            finally:
-                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            return deepcopy(record)
 
     def rollup_source_range(self) -> List[Dict[str, Any]]:
-        """All in-memory records in chain order (rollup input)."""
-        return list(self._records)
+        """A validated durable snapshot in chain order (rollup input)."""
+        return self.records

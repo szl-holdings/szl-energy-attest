@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Offline proxy regressions: request credentials never become receipt identity.
 
-Only inert header strings are used. Upstream, hardware, carbon, signing, and
-receipt storage are mocked. The real HTTP routes, receipt body construction,
-hash chain, and JSONL serializer run; no receipt is signed or written to disk.
+Only inert header strings are used. Upstream, hardware, carbon and signing are mocked. The real HTTP routes, receipt body construction, hash chain,
+and atomic JSONL store run in an isolated temporary directory; no receipt is signed.
 """
 import asyncio
 import importlib
@@ -11,10 +10,11 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import tempfile
 from contextlib import ExitStack
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import Mock, patch
 
 
 # Load just the reviewed proxy package. This keeps the focused regression
@@ -74,8 +74,8 @@ class RequesterPrivacyTests(unittest.TestCase):
         # Every app argument is explicit, and environment access is forbidden.
         self.stack.enter_context(patch.object(proxy, "os", SimpleNamespace(environ={})))
 
-    def app(self):
-        return proxy.create_app(upstream_base="https://upstream.invalid", store_dir="/inert-memory-store")
+    def app(self, store_dir="/inert-memory-store"):
+        return proxy.create_app(upstream_base="https://upstream.invalid", store_dir=store_dir)
 
     def assert_no_header_fragments(self, value):
         serialized = json.dumps(value, sort_keys=True)
@@ -115,19 +115,12 @@ class RequesterPrivacyTests(unittest.TestCase):
         )
 
     def test_authorization_is_absent_from_serialized_and_returned_receipts(self):
-        # Exercise real ReceiptIssuer construction, body hashing, and JSONL
-        # serialization while replacing every disk and signer boundary.
+        # Exercise real receipt construction and atomic serialization in an
+        # isolated directory. Header values are inert and signing stays mocked.
         signing = self.stack.enter_context(patch.object(receipts, "_sign_envelope", return_value=None))
-        fake_os = SimpleNamespace(
-            makedirs=Mock(), fsync=Mock(),
-            path=SimpleNamespace(join=lambda *parts: "/inert-memory-store/receipts.jsonl", exists=Mock(return_value=False)),
-        )
-        self.stack.enter_context(patch.object(receipts, "os", fake_os))
-        storage = mock_open()
-        storage.return_value.fileno.return_value = 42
-        self.stack.enter_context(patch.object(receipts, "open", storage, create=True))
-        self.stack.enter_context(patch.object(receipts.fcntl, "flock"))
-        app = self.app()
+        folder = self.stack.enter_context(tempfile.TemporaryDirectory())
+        path = Path(folder) / "receipts.jsonl"
+        app = self.app(folder)
 
         async def exercise():
             transport = proxy.httpx.ASGITransport(app=app)
@@ -150,9 +143,11 @@ class RequesterPrivacyTests(unittest.TestCase):
                         self.assertEqual(record["body"]["energy"], _ENERGY)
                         self.assertIsNone(record["signature"])
                         self.assert_no_header_fragments(record)
-                        written = storage.return_value.write.call_args.args[0]
+                        written = path.read_text()
                         self.assertTrue(written.endswith("\n"))
-                        self.assertEqual(json.loads(written), record)
+                        rows = [json.loads(line) for line in written.splitlines()]
+                        self.assertEqual(len(rows), seq + 1)
+                        self.assertEqual(rows[-1], record)
                         self.assert_no_header_fragments(written)
                 listing = await client.get("/receipts")
                 self.assertEqual(listing.status_code, 200)
@@ -160,15 +155,12 @@ class RequesterPrivacyTests(unittest.TestCase):
                 self.assert_no_header_fragments(listing.json())
 
         asyncio.run(exercise())
-        self.assertEqual(storage.return_value.write.call_count, len(_CASES))
-        self.assertEqual(fake_os.fsync.call_count, len(_CASES))
+        self.assertEqual(len(path.read_text().splitlines()), len(_CASES))
         self.assertEqual(self.upstream.post.call_count, len(_CASES))
         self.assertEqual(signing.call_count, len(_CASES) + 1)  # includes constructor probe
         for call in signing.call_args_list:
             self.assertIsNone(call.args[1])
             self.assert_no_header_fragments(call.args[0])
-        for call in storage.call_args_list:
-            self.assertEqual(call.args, ("/inert-memory-store/receipts.jsonl", "a"))
         for call in self.upstream.post.call_args_list:
             self.assertEqual(call.args, ("https://upstream.invalid/v1/chat/completions",))
             self.assertEqual(call.kwargs, {"json": _PAYLOAD})
@@ -176,3 +168,4 @@ class RequesterPrivacyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
