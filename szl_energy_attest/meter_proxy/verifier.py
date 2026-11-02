@@ -27,11 +27,13 @@ import base64
 import json
 import os
 import sys
+from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import GENESIS_PREV
 from .receipts import canonical_json, digest_body
 from ._store import read_records, validate_chain
+from .rollup import _member_accounting, _receipt_utc_day
 
 
 def _payload_error(record: Dict[str, Any]) -> Optional[str]:
@@ -110,7 +112,7 @@ def verify_store(store_dir: str,
         result["state"] = "FAIL"
         result["details"].append("FAIL: " + detail)
 
-    seen_digests = set()
+    seen_receipts = {}
     for i, rec in enumerate(receipts):
         body = rec.get("body")
         if not isinstance(body, dict):
@@ -141,7 +143,7 @@ def verify_store(store_dir: str,
         elif sig_state == "unsigned-honest":
             result["unsigned_honest"] += 1
         result["receipts_checked"] += 1
-        seen_digests.add(actual)
+        seen_receipts[actual] = rec
 
     # Rollup verification: own digest + chained prev + member coverage.
     for j, rec in enumerate(rollups):
@@ -160,17 +162,41 @@ def verify_store(store_dir: str,
         if payload_error:
             fail("rollup %d %s" % (j, payload_error))
             continue
-        for md in body.get("member_digests") or []:
-            if md not in seen_digests:
-                fail("rollup %d references unknown member digest %.16s…"
-                     % (j, md))
-                break
-        else:
-            sig_state, sig_detail = _verify_signature(rec, pubkey_pem)
-            if sig_state == "FAIL":
-                fail("rollup %d signature: %s" % (j, sig_detail))
-                continue
-            result["rollups_checked"] += 1
+        try:
+            day = body.get("date")
+            if not isinstance(day, str) or date.fromisoformat(day).isoformat() != day:
+                raise ValueError("invalid rollup date")
+            digests = body.get("member_digests")
+            if not isinstance(digests, list) or any(type(md) is not str for md in digests):
+                raise ValueError("member digests must be a list of strings")
+            if len(set(digests)) != len(digests):
+                raise ValueError("duplicate rollup member")
+            members = []
+            previous_seq = -1
+            for md in digests:
+                member = seen_receipts.get(md)
+                if member is None:
+                    raise ValueError("unknown or unverified member digest")
+                if _receipt_utc_day(member) != day:
+                    raise ValueError("member does not belong to rollup date")
+                if member["body"]["seq"] <= previous_seq:
+                    raise ValueError("members are not in receipt chain order")
+                previous_seq = member["body"]["seq"]
+                members.append(member)
+            expected = _member_accounting(members)
+            actual = {key: body[key] for key in expected}
+            # Canonical JSON preserves the difference between booleans and
+            # numbers; ordinary Python equality would accept True as one.
+            if canonical_json(actual) != canonical_json(expected):
+                raise ValueError("rollup accounting differs from declared members")
+        except (KeyError, ValueError, TypeError, OverflowError) as exc:
+            fail("rollup %d accounting: %s" % (j, exc))
+            continue
+        sig_state, sig_detail = _verify_signature(rec, pubkey_pem)
+        if sig_state == "FAIL":
+            fail("rollup %d signature: %s" % (j, sig_detail))
+            continue
+        result["rollups_checked"] += 1
 
     result["summary"] = (
         "%d receipts checked, %d signed-verified, %d unsigned-honest, "

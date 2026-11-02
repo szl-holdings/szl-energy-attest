@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import os
+import math
 from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
@@ -25,6 +26,77 @@ from .receipts import _sign_envelope, digest_body
 from ._store import locked_store, read_records, validate_chain, write_records
 
 _ROLLUP_PREDICATE = "https://a-11-oy.com/attest/energy-daily-rollup/v1"
+
+
+def _receipt_utc_day(record: Dict[str, Any]) -> str:
+    """Read a timezone-aware issuance timestamp as a UTC calendar day."""
+    issued_at = record["body"].get("issued_at")
+    if not isinstance(issued_at, str):
+        raise ValueError("member issuance timestamp must be a string")
+    try:
+        # Python 3.9/3.10 do not accept Z in fromisoformat.
+        parsed = datetime.fromisoformat(issued_at[:-1] + "+00:00"
+                                       if issued_at.endswith("Z") else issued_at)
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError("timezone required")
+        return parsed.astimezone(timezone.utc).date().isoformat()
+    except (ValueError, OverflowError) as exc:
+        raise ValueError("member issuance timestamp must identify a UTC day") from exc
+
+
+def _member_accounting(members: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Derive billing fields from the declared members, refusing invalid energy.
+
+    This checks internal accounting consistency, not the truth of a meter's
+    claim or completeness of a day's input snapshot.
+    """
+    counts = {"measured": 0, "estimated": 0, "unavailable": 0}
+    values = {"MEASURED": [], "ESTIMATED": []}
+    for record in members:
+        energy = record["body"].get("energy")
+        if not isinstance(energy, dict) or energy.get("state") not in (
+            "MEASURED", "ESTIMATED", "UNAVAILABLE"
+        ):
+            raise ValueError("rollup member has invalid energy state")
+        state = energy["state"]
+        counts[state.lower()] += 1
+        if state == "UNAVAILABLE":
+            continue
+        value = energy.get(state.lower() + "_joules")
+        try:
+            valid = type(value) in (int, float) and math.isfinite(value) and value >= 0
+        except OverflowError:
+            valid = False
+        if not valid:
+            raise ValueError("rollup member energy must be finite and non-negative")
+        values[state].append(value)
+    # Preserve the pre-existing built-in sum semantics. Python 3.12+ uses
+    # compensated float summation here; repeated += changes historical hashes.
+    totals = {state: sum(items) for state, items in values.items()}
+    for total in totals.values():
+        try:
+            finite_total = math.isfinite(total)
+        except OverflowError:
+            finite_total = False
+        if not finite_total:
+            raise ValueError("rollup energy sum must be finite")
+    measured_sum = totals["MEASURED"] if counts["measured"] else None
+    estimated_sum = totals["ESTIMATED"] if counts["estimated"] else None
+    digests = [r["digest"] for r in members]
+    return {
+        "receipt_count": len(members),
+        "counts": counts,
+        "measured_joules_sum": measured_sum,
+        "measured_joules_label": ("MEASURED-SUM-OVER-MEASURED-MEMBERS"
+                                  if counts["measured"] else "UNAVAILABLE-NO-MEASURED-MEMBERS"),
+        "estimated_joules_sum": estimated_sum,
+        "estimated_joules_label": ("ESTIMATED-SUM-SEPARATE-SYNTHETIC-NEVER-BILLED-AS-MEASURED"
+                                   if counts["estimated"] else None),
+        "measured_kwh_sum": (measured_sum / 3_600_000.0 if measured_sum is not None else None),
+        "member_digests": digests,
+        "first_member_digest": digests[0] if digests else None,
+        "last_member_digest": digests[-1] if digests else None,
+    }
 
 
 def build_daily_rollup(
@@ -44,28 +116,9 @@ def build_daily_rollup(
                    digest=digest_body, sequence=True)
     members = [
         r for r in records
-        if (r.get("body", {}).get("issued_at") or "").startswith(day)
+        if _receipt_utc_day(r) == day
     ]
-    digests = [r["digest"] for r in members]
-
-    measured = [r for r in members
-                if r.get("body", {}).get("energy", {}).get("state") == "MEASURED"]
-    estimated = [r for r in members
-                 if r.get("body", {}).get("energy", {}).get("state") == "ESTIMATED"]
-    unmeasured = [r for r in members
-                  if r.get("body", {}).get("energy", {}).get("state") == "UNAVAILABLE"]
-
-    # Honest split accounting: the measured sum covers ONLY measured receipts.
-    measured_sum = sum(
-        r["body"]["energy"]["measured_joules"]
-        for r in measured
-        if isinstance(r["body"]["energy"].get("measured_joules"), (int, float))
-    ) if measured else None
-    estimated_sum = sum(
-        r["body"]["energy"]["estimated_joules"]
-        for r in estimated
-        if isinstance(r["body"]["energy"].get("estimated_joules"), (int, float))
-    ) if estimated else None
+    accounting = _member_accounting(members)
 
     path = os.path.join(store_dir, rollups_file)
     os.makedirs(store_dir, exist_ok=True)
@@ -82,22 +135,7 @@ def build_daily_rollup(
             "predicate_type": _ROLLUP_PREDICATE,
             "kind": "energy-daily-rollup",
             "date": day,
-            "receipt_count": len(members),
-            "counts": {
-                "measured": len(measured),
-                "estimated": len(estimated),
-                "unavailable": len(unmeasured),
-            },
-            "measured_joules_sum": measured_sum,
-            "measured_joules_label": ("MEASURED-SUM-OVER-MEASURED-MEMBERS"
-                                      if measured else "UNAVAILABLE-NO-MEASURED-MEMBERS"),
-            "estimated_joules_sum": estimated_sum,
-            "estimated_joules_label": ("ESTIMATED-SUM-SEPARATE-SYNTHETIC-NEVER-BILLED-AS-MEASURED"
-                                       if estimated else None),
-            "measured_kwh_sum": (measured_sum / 3_600_000.0 if measured_sum is not None else None),
-            "member_digests": digests,
-            "first_member_digest": digests[0] if digests else None,
-            "last_member_digest": digests[-1] if digests else None,
+            **accounting,
             "prev_rollup": prev_digest,
             "doctrine": ("measured, estimated, and unavailable energy are accounted "
                          "SEPARATELY; an estimate is never promoted into the "
