@@ -112,6 +112,7 @@ class EnergyMeter:
         self._t0: Optional[float] = None
         self._energy_mj0: Optional[int] = None  # NVML energy counter at start
         self._samples: List[Tuple[float, float]] = []  # (t, watts) for integral
+        self._invalid_power = False
         self._ready = False
         self._init()
 
@@ -146,14 +147,19 @@ class EnergyMeter:
 
     def start(self) -> None:
         self._t0 = time.perf_counter()
+        self._energy_mj0 = None
         self._samples = []
+        self._invalid_power = False
         if not self._ready or self._handle is None:
             return
         if self._mode == MODE_ENERGY_COUNTER:
             try:
-                self._energy_mj0 = int(
+                baseline = int(
                     _pynvml.nvmlDeviceGetTotalEnergyConsumption(self._handle)
                 )
+                if baseline < 0:
+                    raise ValueError("negative energy counter")
+                self._energy_mj0 = baseline
             except Exception:  # noqa: BLE001
                 self._mode = MODE_POWER_INTEGRAL  # fall back if counter vanishes
         if self._mode == MODE_POWER_INTEGRAL:
@@ -167,6 +173,9 @@ class EnergyMeter:
     def _sample_power(self) -> None:
         try:
             mw = int(_pynvml.nvmlDeviceGetPowerUsage(self._handle))
+            if mw < 0:
+                self._invalid_power = True
+                return
             self._samples.append((time.perf_counter(), mw / 1000.0))
         except Exception:  # noqa: BLE001
             pass
@@ -192,7 +201,13 @@ class EnergyMeter:
         if self._mode == MODE_ENERGY_COUNTER and self._energy_mj0 is not None:
             try:
                 mj1 = int(_pynvml.nvmlDeviceGetTotalEnergyConsumption(self._handle))
-                joules = max(0.0, (mj1 - self._energy_mj0) / 1000.0)
+                if mj1 < self._energy_mj0:
+                    out["note"] = (
+                        "Energy counter decreased or reset during the interval; "
+                        "energy is unmeasured."
+                    )
+                    return out
+                joules = (mj1 - self._energy_mj0) / 1000.0
                 out.update(
                     mode=MODE_ENERGY_COUNTER,
                     joules=round(joules, 6),
@@ -206,6 +221,9 @@ class EnergyMeter:
             self._sample_power()  # final sample at stop
             n = len(self._samples)
             out["n_power_samples"] = n
+            if self._invalid_power:
+                out["note"] = "Negative power readback invalidated this interval; energy is unmeasured."
+                return out
             if n >= 2:
                 joules = 0.0
                 for (ta, wa), (tb, wb) in zip(self._samples, self._samples[1:]):
