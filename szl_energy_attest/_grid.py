@@ -73,7 +73,10 @@ def _finite(x: Any) -> Optional[float]:
     """
     if isinstance(x, bool) or not isinstance(x, (int, float)):
         return None
-    xf = float(x)
+    try:
+        xf = float(x)
+    except OverflowError:
+        return None
     return xf if math.isfinite(xf) else None
 
 
@@ -176,8 +179,16 @@ def _parse_uk_carbon_intensity(payload: Any) -> Dict[str, Any]:
     """
     src = UK_CI_NATIONAL_URL
     try:
+        if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+            raise TypeError("data must be a list")
         rec = payload["data"][0]
-        intensity = rec.get("intensity", {}) or {}
+        if not isinstance(rec, dict):
+            raise TypeError("data record must be an object")
+        intensity = rec.get("intensity")
+        if intensity is None:
+            intensity = {}
+        if not isinstance(intensity, dict):
+            raise TypeError("intensity must be an object")
         actual = _finite(intensity.get("actual"))
         forecast = _finite(intensity.get("forecast"))
         value = actual if actual is not None else forecast
