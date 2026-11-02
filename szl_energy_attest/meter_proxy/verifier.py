@@ -41,6 +41,8 @@ def _payload_error(record: Dict[str, Any]) -> Optional[str]:
         if record.get("signature_present"):
             return "envelope missing despite signature_present assertion"
         return None
+    if record.get("signature_present") is not True:
+        return "envelope present without an explicit signature_present assertion"
     if not isinstance(env, dict) or not isinstance(env.get("payload"), str):
         return "envelope payload is missing or malformed"
     try:
