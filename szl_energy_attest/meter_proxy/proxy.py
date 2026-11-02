@@ -31,7 +31,7 @@ from typing import Any, Dict, Optional
 
 from .grid import fetch_carbon_context
 from .meter import EnergyState, measure_inference_energy
-from .receipts import ReceiptIssuer
+from .receipts import ReceiptIssuer, _token_count
 from .rollup import build_daily_rollup
 
 try:
@@ -108,11 +108,13 @@ def create_app(
         # EnergyMeasurement always carries a wall-clock value; guard anyway so
         # a hypothetical None degrades to 0.0 rather than crashing issuance.
         latency = float(em.wall_seconds) if em.wall_seconds is not None else 0.0
-        usage = response_data.get("usage") or {}
-        ti = usage.get("prompt_tokens")
-        to = usage.get("completion_tokens")
-        ti = int(ti) if isinstance(ti, (int, float)) else None
-        to = int(to) if isinstance(to, (int, float)) else None
+        usage = response_data.get("usage")
+        if not isinstance(usage, dict):
+            usage = {}
+        # A boolean, fractional value or negative number is not token evidence.
+        # Keep the upstream response intact, but label unusable counts unavailable.
+        ti = _token_count(usage.get("prompt_tokens"))
+        to = _token_count(usage.get("completion_tokens"))
 
         carbon = fetch_carbon_context()
         record = issuer.issue(
