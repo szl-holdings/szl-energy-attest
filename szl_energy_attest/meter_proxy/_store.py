@@ -7,6 +7,7 @@ ambiguous commit outcome: reload the store before deciding whether to retry.
 from contextlib import contextmanager
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -36,6 +37,13 @@ def _invalid_constant(value):
     raise ValueError("nonfinite JSON value: " + value)
 
 
+def _finite_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("nonfinite JSON number: " + value)
+    return number
+
+
 def read_records(path):
     try:
         raw = Path(path).read_bytes()
@@ -47,7 +55,8 @@ def read_records(path):
     for line in raw.splitlines():
         if not line.strip():
             raise ValueError("blank JSONL record")
-        record = json.loads(line, object_pairs_hook=_object, parse_constant=_invalid_constant)
+        record = json.loads(line, object_pairs_hook=_object, parse_constant=_invalid_constant,
+                            parse_float=_finite_float)
         if not isinstance(record, dict):
             raise ValueError("JSONL record must be an object")
         records.append(record)

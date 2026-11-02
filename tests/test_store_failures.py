@@ -147,3 +147,26 @@ def test_returned_receipts_cannot_mutate_durable_state(tmp_path):
     record["body"]["seq"] = 900
     snapshot = issuer.records; snapshot[0]["body"]["seq"] = 800
     assert issuer.records[0]["body"]["seq"] == 0
+
+
+@pytest.mark.parametrize("number", ["1e999", "-1e999", "1.7976931348623159e308"])
+def test_overflowed_json_number_is_refused_even_outside_hashed_body(tmp_path, number):
+    from szl_energy_attest.meter_proxy._store import read_records
+    from szl_energy_attest.meter_proxy.verifier import verify_store
+    issuer = ReceiptIssuer(str(tmp_path)); issue(issuer)
+    path = tmp_path / "receipts.jsonl"
+    raw = path.read_bytes().replace(b"{", b'{"extra":' + number.encode() + b",", 1)
+    path.write_bytes(raw)
+    with pytest.raises(ValueError, match="nonfinite JSON number"):
+        read_records(path)
+    with pytest.raises(ValueError, match="nonfinite JSON number"):
+        issue(issuer)
+    assert verify_store(str(tmp_path))["state"] == "FAIL"
+    assert path.read_bytes() == raw
+
+
+def test_finite_json_number_remains_readable(tmp_path):
+    from szl_energy_attest.meter_proxy._store import read_records
+    path = tmp_path / "finite.jsonl"
+    path.write_text('{"value":1.7976931348623157e308}\n')
+    assert read_records(path) == [{"value": float("1.7976931348623157e308")}]
