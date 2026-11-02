@@ -104,6 +104,38 @@ def test_signed_receipts_and_rollups_verify(tmp_path):
     assert body["measured_kwh_sum"] == pytest.approx(12.5 / 3_600_000.0)
 
 
+@pytest.mark.parametrize("field,value", [
+    ("receipt_count", 99),
+    ("date", "2000-01-01"),
+    ("counts", {"measured": 0, "estimated": 0, "unavailable": 99}),
+])
+def test_rollup_signature_must_bind_the_stored_body(tmp_path, field, value):
+    szl_receipt = pytest.importorskip("szl_receipt")
+    priv, pub = szl_receipt.generate_keypair()  # ephemeral fixture; never persisted
+    store = str(tmp_path)
+    issuer = ReceiptIssuer(store, private_key_pem=priv)
+    issuer.issue(model="offline-fixture", tokens_in=1, tokens_out=1,
+                 energy=_energy_unavailable(), carbon=_carbon_unavail(),
+                 latency_seconds=0.01, synthetic=True, provenance="offline-test")
+    rollup = build_daily_rollup(issuer.records, store_dir=store, private_key_pem=priv)
+    assert verify_store(store, pub)["state"] == "VERIFIED"
+
+    # The original envelope still verifies cryptographically, but cannot attest
+    # changed accounting or identity merely because an unkeyed hash is recomputed.
+    rollup["body"][field] = value
+    rollup["digest"] = digest_body(rollup["body"])
+    assert szl_receipt.verify_receipt(rollup["signature"], pub)[0]
+    path = tmp_path / "rollups.jsonl"
+    damaged = (json.dumps(rollup, sort_keys=True) + "\n").encode()
+    path.write_bytes(damaged)
+
+    result = verify_store(store, pub)
+    assert result["state"] == "FAIL", result
+    assert result["rollups_checked"] == 0
+    assert any("canonical body" in detail for detail in result["details"])
+    assert path.read_bytes() == damaged  # verification remains read-only
+
+
 def test_estimated_never_blends_into_measured(tmp_path):
     store = str(tmp_path)
     issuer = ReceiptIssuer(store)
