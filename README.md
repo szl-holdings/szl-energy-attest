@@ -434,6 +434,16 @@ no automatic truncation or repair is attempted. A repeated UTC-day rollup return
 the existing receipt only when its members and accounting are identical. Changed
 members for an already sealed day require operator reconciliation.
 
+Offline rollup verification recomputes counts and separate measured/estimated
+joule totals, kWh conversion, labels and endpoint digests from the declared
+members. Members must be unique, present in the verified receipt chain, in chain
+order and on the declared UTC day. Invalid energy states, booleans, negative
+quantities and overflowed totals cannot become billable rollups. This proves
+internal accounting consistency for that declared snapshot, not completeness
+against later receipts or the physical truth of a meter's measurements.
+Floating-point sums retain Python's built-in `sum` semantics on the issuing
+runtime; cross-version numerical identity is not asserted.
+
 Rollout requires an operator-owned local POSIX directory and **all writers to be
 stopped and upgraded together**; old append-mode writers do not share this lock.
 Snapshots are owner-readable/writable (0600). Each write rewrites the current
