@@ -99,6 +99,49 @@ def test_network_failure_is_honest_unavailable_never_raises():
     assert gc["price_per_mwh"] is None
 
 
+def test_malformed_uk_response_shapes_are_honest_unavailable():
+    payloads = [
+        None, [], "invalid", {}, {"data": None}, {"data": {}},
+        {"data": []}, {"data": "invalid"},
+        *({"data": [record]} for record in (None, False, 7, "invalid", [])),
+        *({"data": [{"intensity": value}]} for value in
+          (True, 7, "invalid", [121])),
+    ]
+    for payload in payloads:
+        gc = fetch_grid_context(
+            PROVIDER_UK_CARBON_INTENSITY, _transport=lambda *_: payload)
+        assert gc["carbon_intensity_gco2_per_kwh"] is None, payload
+        assert gc["carbon_intensity_label"] == GRID_LABEL_UNAVAILABLE, payload
+        assert gc["price_per_mwh"] is None, payload
+        assert gc["price_label"] == GRID_LABEL_UNAVAILABLE, payload
+        assert gc["source"] == UK_CI_NATIONAL_URL, payload
+        assert gc["observed_at"] is None, payload
+
+
+def test_oversized_provider_integer_falls_back_to_valid_forecast():
+    # Valid JSON integers can exceed the float range without being a NaN/Inf
+    # token. An unusable actual observation must not discard a valid forecast.
+    payload = {"data": [{"from": "2026-07-09T18:30Z", "intensity": {
+        "actual": 10 ** 1000, "forecast": 90,
+    }}]}
+    gc = fetch_grid_context(
+        PROVIDER_UK_CARBON_INTENSITY, _transport=lambda *_: payload)
+    assert gc["carbon_intensity_gco2_per_kwh"] == 90
+    assert gc["carbon_intensity_label"] == GRID_LABEL_REPORTED
+    assert "forecast" in gc["note"]
+
+
+def test_oversized_grid_numbers_are_unavailable():
+    gc = sanitize_grid_context({
+        "carbon_intensity_gco2_per_kwh": 10 ** 1000,
+        "price_per_mwh": -(10 ** 1000),
+    })
+    assert gc["carbon_intensity_gco2_per_kwh"] is None
+    assert gc["carbon_intensity_label"] == GRID_LABEL_UNAVAILABLE
+    assert gc["price_per_mwh"] is None
+    assert gc["price_label"] == GRID_LABEL_UNAVAILABLE
+
+
 def test_optional_providers_never_require_a_key():
     for prov in (PROVIDER_ELECTRICITY_MAPS, PROVIDER_WATTTIME):
         gc = fetch_grid_context(prov)  # no api_key, no transport
