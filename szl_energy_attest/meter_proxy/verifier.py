@@ -34,6 +34,24 @@ from .receipts import canonical_json, digest_body
 from ._store import read_records, validate_chain
 
 
+def _payload_error(record: Dict[str, Any]) -> Optional[str]:
+    """Bind any present envelope to the exact body before signature checks."""
+    env = record.get("signature")
+    if env is None:
+        if record.get("signature_present"):
+            return "envelope missing despite signature_present assertion"
+        return None
+    if not isinstance(env, dict) or not isinstance(env.get("payload"), str):
+        return "envelope payload is missing or malformed"
+    try:
+        payload = base64.b64decode(env["payload"], validate=True)
+    except (ValueError, TypeError) as exc:
+        return "envelope payload not decodable: %s" % exc
+    if payload != canonical_json(record["body"]).encode("utf-8"):
+        return "envelope payload not byte-identical to canonical body"
+    return None
+
+
 def _verify_signature(record: Dict[str, Any],
                       pubkey_pem: Optional[bytes]) -> Tuple[str, str]:
     """Return (state, detail). state: SIGNED-VERIFIED | unsigned-honest | FAIL |
@@ -110,17 +128,10 @@ def verify_store(store_dir: str,
             continue
         # If a signature envelope exists, its decoded payload must be the
         # exact canonical body bytes — byte-bound to the hashed body.
-        env = rec.get("signature")
-        if env and env.get("payload"):
-            try:
-                payload = base64.b64decode(env["payload"]).decode("utf-8")
-            except Exception as exc:  # noqa: BLE001
-                fail("receipt %d envelope payload not decodable: %r" % (i, exc))
-                continue
-            if payload != canonical_json(body):
-                fail("receipt %d envelope payload not byte-identical to "
-                     "canonical body" % i)
-                continue
+        payload_error = _payload_error(rec)
+        if payload_error:
+            fail("receipt %d %s" % (i, payload_error))
+            continue
         sig_state, sig_detail = _verify_signature(rec, pubkey_pem)
         if sig_state == "FAIL":
             fail("receipt %d signature: %s" % (i, sig_detail))
@@ -144,6 +155,10 @@ def verify_store(store_dir: str,
         expected_prev = rollups[j - 1]["digest"] if j else GENESIS_PREV
         if body.get("prev_rollup") != expected_prev:
             fail("rollup %d chain break in rollup spine" % j)
+            continue
+        payload_error = _payload_error(rec)
+        if payload_error:
+            fail("rollup %d %s" % (j, payload_error))
             continue
         for md in body.get("member_digests") or []:
             if md not in seen_digests:
