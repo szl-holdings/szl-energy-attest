@@ -39,6 +39,17 @@ def _verify_signature(record: Dict[str, Any],
     """Return (state, detail). state: SIGNED-VERIFIED | unsigned-honest | FAIL |
     UNCAPPED (no signing layer installed)."""
     env = record.get("signature")
+    # Verify the same body binding for both inference and rollup envelopes.
+    # A valid signature over another payload does not attest this record.
+    if env is not None:
+        if not isinstance(env, dict):
+            return ("FAIL", "signature envelope must be an object")
+        try:
+            payload = base64.b64decode(env["payload"], validate=True)
+        except (KeyError, TypeError, ValueError):
+            return ("FAIL", "envelope payload not decodable")
+        if payload != canonical_json(record["body"]).encode("utf-8"):
+            return ("FAIL", "envelope payload not byte-identical to canonical body")
     if not record.get("signature_present"):
         return ("UNCAPPED",
                 record.get("signature_note") or "no signature present")
@@ -108,19 +119,6 @@ def verify_store(store_dir: str,
         if body.get("prev") != expected_prev:
             fail("receipt %d chain break: prev does not match previous digest" % i)
             continue
-        # If a signature envelope exists, its decoded payload must be the
-        # exact canonical body bytes — byte-bound to the hashed body.
-        env = rec.get("signature")
-        if env and env.get("payload"):
-            try:
-                payload = base64.b64decode(env["payload"]).decode("utf-8")
-            except Exception as exc:  # noqa: BLE001
-                fail("receipt %d envelope payload not decodable: %r" % (i, exc))
-                continue
-            if payload != canonical_json(body):
-                fail("receipt %d envelope payload not byte-identical to "
-                     "canonical body" % i)
-                continue
         sig_state, sig_detail = _verify_signature(rec, pubkey_pem)
         if sig_state == "FAIL":
             fail("receipt %d signature: %s" % (i, sig_detail))
