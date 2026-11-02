@@ -151,3 +151,27 @@ def test_canonical_and_digest_deterministic():
     body = {"b": 1, "a": [2, 3], "c": None}
     assert canonical_json(body) == '{"a":[2,3],"b":1,"c":null}'
     assert digest_body(body) == digest_body(dict(reversed(list(body.items()))))
+
+
+@pytest.mark.parametrize("invalid", [True, False, -1, -0.5, 1.5, 2.0, "3", [], {},
+                                     float("inf"), float("nan")])
+def test_invalid_token_counts_are_unavailable_in_durable_receipt(tmp_path, invalid):
+    issuer = ReceiptIssuer(str(tmp_path))
+    record = issuer.issue(model="offline-test", tokens_in=invalid, tokens_out=2,
+                          energy=_energy_unavailable(), carbon=_carbon_unavail(),
+                          latency_seconds=0.01)
+    body = record["body"]
+    assert body["tokens_in"] is None
+    assert body["tokens_out"] == 2
+    assert body["token_label"] == "UNAVAILABLE"
+    assert issuer.records == [record]
+    assert digest_body(body) == record["digest"]
+
+
+def test_zero_token_counts_remain_measured(tmp_path):
+    issuer = ReceiptIssuer(str(tmp_path))
+    body = issuer.issue(model="offline-test", tokens_in=0, tokens_out=0,
+                        energy=_energy_unavailable(), carbon=_carbon_unavail(),
+                        latency_seconds=0.01)["body"]
+    assert body["tokens_in"] == body["tokens_out"] == 0
+    assert body["token_label"] == "MEASURED"

@@ -51,6 +51,11 @@ def digest_body(body: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
+def _token_count(value: Any) -> Optional[int]:
+    """Keep only genuine non-negative integer counts; never coerce evidence."""
+    return value if type(value) is int and value >= 0 else None
+
+
 def _sign_envelope(body: Dict[str, Any], private_key_pem: Optional[Union[str, bytes]]):
     """DSSE envelope via shared szl-receipt, with honest fallbacks.
 
@@ -115,6 +120,8 @@ class ReceiptIssuer:
         provenance: str = "live",
     ) -> Dict[str, Any]:
         """Build, chain, sign, durably persist, and return one receipt."""
+        tokens_in = _token_count(tokens_in)
+        tokens_out = _token_count(tokens_out)
         with self._lock, locked_store(self._path):
             self._records = self._load()
             prev = self._records[-1]["digest"] if self._records else GENESIS_PREV
@@ -128,8 +135,8 @@ class ReceiptIssuer:
                 "model": model,
                 "tokens_in": tokens_in,
                 "tokens_out": tokens_out,
-                "token_label": ("MEASURED" if isinstance(tokens_in, int)
-                                 and isinstance(tokens_out, int)
+                "token_label": ("MEASURED" if tokens_in is not None
+                                 and tokens_out is not None
                                  else "UNAVAILABLE"),
                 "energy": deepcopy(energy),          # state MEASURED/UNAVAILABLE(+demo ESTIMATED)
                 "latency_seconds": round(float(latency_seconds), 6),

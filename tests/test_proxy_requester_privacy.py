@@ -114,6 +114,41 @@ class RequesterPrivacyTests(unittest.TestCase):
             "https://upstream.invalid/v1/chat/completions", json=_PAYLOAD
         )
 
+    def test_invalid_upstream_token_counts_never_become_measured(self):
+        issuer = Mock()
+        issuer.issue.return_value = {
+            "body": {"receipt_id": "offline-test", "energy": _ENERGY},
+            "digest": "offline-digest",
+        }
+        self.stack.enter_context(patch.object(proxy, "ReceiptIssuer", return_value=issuer))
+        app = self.app()
+        handler = next(r.endpoint for r in app.routes if r.path == "/v1/chat/completions")
+
+        class OfflineRequest:
+            async def json(self):
+                return _PAYLOAD
+
+        cases = [
+            ({"prompt_tokens": value, "completion_tokens": 4}, None, 4)
+            for value in (True, False, -1, -0.5, 1.5, 2.0, "3", [], {})
+        ] + [
+            ({"prompt_tokens": 0, "completion_tokens": 4}, 0, 4),
+            ({"prompt_tokens": 3, "completion_tokens": False}, 3, None),
+            (None, None, None), ({}, None, None),
+            ([1], None, None), ("invalid", None, None), (True, None, None),
+        ]
+        for usage, expected_in, expected_out in cases:
+            with self.subTest(usage=usage):
+                upstream_response = dict(_UPSTREAM, usage=usage)
+                self.upstream.post.return_value.json.return_value = upstream_response
+                response = asyncio.run(handler(OfflineRequest()))
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(json.loads(response.body), upstream_response)
+                self.assertEqual(issuer.issue.call_args.kwargs["tokens_in"], expected_in)
+                self.assertEqual(issuer.issue.call_args.kwargs["tokens_out"], expected_out)
+                self.assertIs(type(issuer.issue.call_args.kwargs["tokens_in"]),
+                              type(expected_in))
+
     def test_authorization_is_absent_from_serialized_and_returned_receipts(self):
         # Exercise real receipt construction and atomic serialization in an
         # isolated directory. Header values are inert and signing stays mocked.
