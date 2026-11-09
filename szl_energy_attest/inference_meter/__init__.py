@@ -175,15 +175,20 @@ def meter(
 
     The receipt is appended to ``chain`` (or the module default chain) and is
     a plain dict with a SHA-256 ``digest`` over its canonical body.
+
+    Counts must be nonnegative plain integers. Invalid counts raise
+    ``ValueError`` before the policy gate or ``fn`` runs.
     """
+    tokens_in = _receipt._require_token_count(tokens_in, "tokens_in")
+    tokens_out = _receipt._require_token_count(tokens_out, "tokens_out")
     kwargs = dict(kwargs or {})
     ch = chain if chain is not None else default_chain()
     gate = policy if policy is not None else allow_all
 
     context = {
         "model": model,
-        "tokens_in": int(tokens_in),
-        "tokens_out": int(tokens_out),
+        "tokens_in": tokens_in,
+        "tokens_out": tokens_out,
         "args": args,
         "kwargs": kwargs,
         "ts": time.time(),
@@ -246,13 +251,18 @@ def metered(
 
     You may update ``state["tokens_out"]`` inside the block (e.g. once you know
     how many tokens were generated) and it will be used in the receipt.
+    Counts must remain nonnegative plain integers. Invalid initial counts
+    raise ``ValueError`` before entry; invalid updated counts raise on exit
+    without appending a receipt. The already-run block is not rolled back.
     """
+    tokens_in = _receipt._require_token_count(tokens_in, "tokens_in")
+    tokens_out = _receipt._require_token_count(tokens_out, "tokens_out")
     kwargs_ch = chain if chain is not None else default_chain()
     gate = policy if policy is not None else allow_all
     state: Dict[str, Any] = {
         "model": model,
-        "tokens_in": int(tokens_in),
-        "tokens_out": int(tokens_out),
+        "tokens_in": tokens_in,
+        "tokens_out": tokens_out,
         "receipt": None,
     }
     decision = evaluate(gate, dict(state, ts=time.time()))
@@ -266,8 +276,8 @@ def metered(
         energy = em.stop()
         state["receipt"] = kwargs_ch.emit(
             model=state["model"],
-            tokens_in=int(state["tokens_in"]),
-            tokens_out=int(state["tokens_out"]),
+            tokens_in=state["tokens_in"],
+            tokens_out=state["tokens_out"],
             energy=energy,
             policy_decision=decision.decision,
             policy_reason=decision.reason,

@@ -80,6 +80,13 @@ def _digest_body(body: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
+def _require_token_count(value: Any, field: str) -> int:
+    """Accept exact caller evidence, never bools, truncation, or coercion."""
+    if type(value) is not int or value < 0:
+        raise ValueError(f"{field} must be a nonnegative integer")
+    return value
+
+
 class ReceiptChain:
     """Append-only, SHA-256 hash-chained log of energy/governance receipts.
 
@@ -111,7 +118,12 @@ class ReceiptChain:
         is installed, the returned record carries an additive ``signature``
         DSSE envelope. With no key the envelope is UNSIGNED-honest; with no
         szl-receipt the record is unchanged. The hash chain is never altered.
+
+        Counts must be nonnegative plain integers. Invalid counts raise
+        ``ValueError`` before signing or appending a receipt.
         """
+        tokens_in = _require_token_count(tokens_in, "tokens_in")
+        tokens_out = _require_token_count(tokens_out, "tokens_out")
         with self._lock:
             prev = self._records[-1]["digest"] if self._records else _GENESIS
             seq = len(self._records)
@@ -125,8 +137,8 @@ class ReceiptChain:
             body = {
                 "seq": seq,
                 "model": str(model),
-                "tokens_in": int(tokens_in),
-                "tokens_out": int(tokens_out),
+                "tokens_in": tokens_in,
+                "tokens_out": tokens_out,
                 "mode": str(mode),
                 "joules": (round(float(joules), 6) if joules is not None else None),
                 "wall_seconds": (round(float(wall), 9) if wall is not None else None),

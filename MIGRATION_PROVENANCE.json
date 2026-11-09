@@ -35,8 +35,13 @@
       "source": "build/torch-universal/governed_inference_meter/_receipt.py",
       "destination": "szl_energy_attest/inference_meter/_receipt.py",
       "source_sha256": "5ab4a43279d288c2e4c6a82ceb1fa52e2cdfb9d459f3a995b017355f67c23897",
-      "destination_sha256": "5ab4a43279d288c2e4c6a82ceb1fa52e2cdfb9d459f3a995b017355f67c23897",
-      "transform": "exact-copy"
+      "destination_sha256": "f7f41b6d571b4a081a4b023413b1ff8e9822a27f7af6df678c1080c20468b241",
+      "transform": "strict-token-count-validation",
+      "transform_detail": [
+        "Reject caller token counts that are not nonnegative plain integers before signing or appending a receipt.",
+        "Preserve valid integer counts exactly instead of applying int() coercion."
+      ],
+      "successor_updated_at_utc": "2026-11-09T18:29:45.999586+00:00"
     },
     {
       "source": "build/torch-universal/governed_inference_meter/_attest.py",
