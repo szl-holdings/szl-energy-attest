@@ -4,7 +4,23 @@ Released versions are published to PyPI from GitHub Releases tagged `v<version>`
 (see `.github/workflows/publish-pypi.yml`). Entries before 0.3.3 were recorded only
 in GitHub Release notes.
 
-## 0.3.3 (unreleased)
+## 0.3.4 (unreleased)
+
+### Fixed
+
+- Serialize receipt-store writes atomically and reject malformed or ambiguous
+  JSON before extending a chain (#70).
+- Preserve unavailable grid context when providers return malformed data (#71).
+- Bind rollup envelopes to exact canonical bodies, validate declared energy
+  accounting and UTC membership, and reject contradictory signature metadata
+  (#72, #75, #76).
+- Reject invalid energy measurement intervals and preserve honest token-count
+  evidence in the proxy and inference meter. Booleans, fractional values, and
+  numeric strings are not coerced into token counts (#77, #78, #82).
+
+The separate meter2 exporter change in draft PR #83 is not part of this release.
+
+## 0.3.3 (2026-10-13)
 
 Security release for the meter proxy (`szl_energy_attest.meter_proxy`). Upgrade if
 you run the proxy. No other public API changes.
