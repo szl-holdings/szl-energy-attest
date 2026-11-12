@@ -1,0 +1,80 @@
+{
+  "schema": "szl.kernel-source-binding.observed/v0",
+  "label": "OBSERVED",
+  "note": "Observed after the fact by hashing public Hub bytes and the archived source repository. This is not a publisher-emitted szl.kernel-source-binding/v1 record; the hf-kernel-publish workflow remains the sole Hub writer and should emit v1 on the next republish.",
+  "observed_at": "2026-11-12",
+  "repo_id": "SZLHOLDINGS/governed-inference-meter",
+  "repo_type": "kernel",
+  "hub_revision": "6d546bfc6591b44ae5eb57d1209678454e52a3f5",
+  "hub_main_at_observation": "741cd2a4400b292a6ac885851e3e471d884fd930",
+  "hub_main_python_blobs_identical_to_hub_revision": true,
+  "source_repository": "szl-holdings/governed-inference-meter",
+  "source_repository_archived": true,
+  "source_commit": "aee6466ecaaa1f311d42885f7927331e2f6508c8",
+  "canonical_successor": "szl-holdings/szl-energy-attest",
+  "canonical_successor_package": "szl_energy_attest.inference_meter",
+  "published_bytes_match_canonical_successor": false,
+  "files": [
+    {
+      "hub_path": "build/torch-cpu/governed_inference_meter/__init__.py",
+      "hub_sha256": "26eb6c23beea51693707fa74866f9e1e169c11923edc50bc7f55fda8e8872dc9",
+      "lf_normalized_sha256": "f9876a0bee2d90b81d4cde4346eeed0e9ec427acbb25bc1df4a526878a953aa7",
+      "source_path": "build/torch-universal/governed_inference_meter/__init__.py",
+      "source_sha256": "f9876a0bee2d90b81d4cde4346eeed0e9ec427acbb25bc1df4a526878a953aa7",
+      "matches_source_after_crlf_to_lf": true,
+      "matches_canonical_package_after_crlf_to_lf": false
+    },
+    {
+      "hub_path": "build/torch-cpu/governed_inference_meter/_attest.py",
+      "hub_sha256": "6a3065be1e459bdd584f14189883edf287146671c87053b46748f0dd2781806e",
+      "lf_normalized_sha256": "0e3bed1c468da88e147ba2518a48b0514b28dab955e2580393d0d60a3d406c30",
+      "source_path": "build/torch-universal/governed_inference_meter/_attest.py",
+      "source_sha256": "0e3bed1c468da88e147ba2518a48b0514b28dab955e2580393d0d60a3d406c30",
+      "matches_source_after_crlf_to_lf": true,
+      "matches_canonical_package_after_crlf_to_lf": false
+    },
+    {
+      "hub_path": "build/torch-cpu/governed_inference_meter/_energy.py",
+      "hub_sha256": "465e3d89f351e1a62f3f5c172967800de834a638f4c63eb6a439a8933b374e93",
+      "lf_normalized_sha256": "d1ae459b182d328fe05589fe099a37c56f605960078e8702a196b167d93ec33f",
+      "source_path": "build/torch-universal/governed_inference_meter/_energy.py",
+      "source_sha256": "d1ae459b182d328fe05589fe099a37c56f605960078e8702a196b167d93ec33f",
+      "matches_source_after_crlf_to_lf": true,
+      "matches_canonical_package_after_crlf_to_lf": false
+    },
+    {
+      "hub_path": "build/torch-cpu/governed_inference_meter/_policy.py",
+      "hub_sha256": "f5c9eac9ad57df0c2ec722fdd116fcf18c9e9c85ff043c3c2b23b5ec00f01955",
+      "lf_normalized_sha256": "96d7ea0b227f1a54462964e2406e8284beb0a0dfa530d3be38581a1a25fa42dd",
+      "source_path": "build/torch-universal/governed_inference_meter/_policy.py",
+      "source_sha256": "96d7ea0b227f1a54462964e2406e8284beb0a0dfa530d3be38581a1a25fa42dd",
+      "matches_source_after_crlf_to_lf": true,
+      "matches_canonical_package_after_crlf_to_lf": true
+    },
+    {
+      "hub_path": "build/torch-cpu/governed_inference_meter/_receipt.py",
+      "hub_sha256": "415450c448534ff6e491981239cd2f17775bb6c0157ded3d857c6fefb4ed9204",
+      "lf_normalized_sha256": "5ab4a43279d288c2e4c6a82ceb1fa52e2cdfb9d459f3a995b017355f67c23897",
+      "source_path": "build/torch-universal/governed_inference_meter/_receipt.py",
+      "source_sha256": "5ab4a43279d288c2e4c6a82ceb1fa52e2cdfb9d459f3a995b017355f67c23897",
+      "matches_source_after_crlf_to_lf": true,
+      "matches_canonical_package_after_crlf_to_lf": false
+    },
+    {
+      "hub_path": "build/torch-cpu/governed_inference_meter/_spine.py",
+      "hub_sha256": "4c1e0a20c4d34eef8975a7fced9dfb10bf276bd280cfe9b2c8717a9a97f644a8",
+      "lf_normalized_sha256": "a5b4d38e01d7137cbcd6e4ec2a3bd89fe2f680e1e7b9f8c6dadd81fe9bd3d126",
+      "source_path": "build/torch-universal/governed_inference_meter/_spine.py",
+      "source_sha256": "a5b4d38e01d7137cbcd6e4ec2a3bd89fe2f680e1e7b9f8c6dadd81fe9bd3d126",
+      "matches_source_after_crlf_to_lf": true,
+      "matches_canonical_package_after_crlf_to_lf": false
+    },
+    {
+      "hub_path": "build/torch-cpu/metadata.json",
+      "hub_sha256": "513c45bd6834e853a2afbaf31c672c2ef083d037ccb21feb38d928e162682a88",
+      "lf_normalized_sha256": "f59e5f85bdf0db3c4f4ba50ea464e75a63d7abc4a5e5e6bc949eacb876682f06",
+      "source_path": null,
+      "note": "Hub-generated build metadata; no source file in the source repository"
+    }
+  ]
+}
