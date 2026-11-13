@@ -496,3 +496,55 @@ def test_verify_chain_rejects_unknown_algorithm_prefix():
 if __name__ == "__main__":
     import pytest as _p
     raise SystemExit(_p.main([__file__, "-q"]))
+
+
+# ---------------------------------------------------------------------------
+# Meter2 exporter must not label NVML initialization as measured GPU joules.
+# ---------------------------------------------------------------------------
+def test_meter2_energy_unavailable_when_counter_fails(monkeypatch):
+    import runpy
+    from types import SimpleNamespace
+
+    def no_energy(_handle):
+        raise RuntimeError("NVML_ERROR_NOT_SUPPORTED")
+
+    fake = SimpleNamespace(
+        nvmlInit=lambda: None,
+        nvmlDeviceGetCount=lambda: 1,
+        nvmlDeviceGetHandleByIndex=lambda index: index,
+        nvmlDeviceGetName=lambda handle: b"A6000",
+        nvmlDeviceGetPowerUsage=lambda handle: 125000,
+        nvmlDeviceGetTotalEnergyConsumption=no_energy,
+    )
+    monkeypatch.setitem(sys.modules, "pynvml", fake)
+    exporter = runpy.run_path(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                     "szl_meter2_exporter.py")
+    )
+    sample = exporter["_sample"]()
+    assert sample["nvml"] is True
+    assert sample["label"] == "UNAVAILABLE"
+    assert sample["gpus"][0]["power_w"] == 125.0
+    assert sample["gpus"][0]["energy_j"] is None
+
+
+def test_meter2_energy_measured_only_with_real_counter(monkeypatch):
+    import runpy
+    from types import SimpleNamespace
+
+    fake = SimpleNamespace(
+        nvmlInit=lambda: None,
+        nvmlDeviceGetCount=lambda: 1,
+        nvmlDeviceGetHandleByIndex=lambda index: index,
+        nvmlDeviceGetName=lambda handle: b"A6000",
+        nvmlDeviceGetPowerUsage=lambda handle: 125000,
+        nvmlDeviceGetTotalEnergyConsumption=lambda handle: 14000,
+    )
+    monkeypatch.setitem(sys.modules, "pynvml", fake)
+    exporter = runpy.run_path(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                     "szl_meter2_exporter.py")
+    )
+    sample = exporter["_sample"]()
+    assert sample["label"] == "MEASURED"
+    assert sample["gpus"][0]["energy_j"] == 14.0
