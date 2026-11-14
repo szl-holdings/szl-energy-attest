@@ -61,6 +61,11 @@ def _sample():
         out["gpus"].append(
             {"index": i, "name": name, "power_w": power_w, "energy_j": energy_j}
         )
+    # NVML initialization is not proof that the energy counter was read.
+    # Power-only samples cannot be labeled as measured energy.
+    if not any(g["energy_j"] is not None for g in out["gpus"]):
+        out["label"] = "UNAVAILABLE"
+        out["note"] = "GPU energy counter unavailable; joules NOT fabricated"
     return out
 
 
