@@ -4,9 +4,9 @@
 
 HONESTY (Λ = Conjecture 1, advisory):
 - Energy is MEASURED only when NVIDIA NVML is available and grants the
-  power-readback capability. We integrate instantaneous power draw (watts)
-  sampled over wall-clock time to estimate joules. This is a real,
-  reproducible physical measurement of *board* power.
+  power-readback capability. We integrate reported power draw (watts)
+  sampled over wall-clock time to estimate joules. Depending on the GPU, NVML
+  reports instantaneous or time-averaged board power; this remains an estimate.
 - When NVML is absent (no GPU, no driver, no permission, or import failure)
   we DEGRADE HONESTLY: the meter reports ``mode="unmeasured"`` and
   ``joules=None``. We never fabricate a joule figure.
@@ -19,6 +19,9 @@ HONESTY (Λ = Conjecture 1, advisory):
       trapezoidal rule. Used when the energy counter is unavailable.
 - Board power includes more than the compute die (memory, fans, losses).
   We report what the hardware reports and say so. No modeling, no scaling.
+- A failed or invalid power sample invalidates that measurement interval.
+  Successful samples are retained for diagnostics, not used to bridge the gap.
+  A new start() resets the interval fault state.
 
 Stdlib + optional pynvml only. No tensors, no network, no disk writes.
 """
@@ -178,7 +181,9 @@ class EnergyMeter:
                 return
             self._samples.append((time.perf_counter(), mw / 1000.0))
         except Exception:  # noqa: BLE001
-            pass
+            # A missing read is not zero power or permission to bridge the gap.
+            # Keep successful samples for diagnostics, but abstain for this interval.
+            self._invalid_power = True
 
     def stop(self) -> Dict[str, Any]:
         t1 = time.perf_counter()
@@ -222,7 +227,7 @@ class EnergyMeter:
             n = len(self._samples)
             out["n_power_samples"] = n
             if self._invalid_power:
-                out["note"] = "Negative power readback invalidated this interval; energy is unmeasured."
+                out["note"] = "Invalid or unavailable power readback invalidated this interval; energy is unmeasured."
                 return out
             if n >= 2:
                 joules = 0.0
