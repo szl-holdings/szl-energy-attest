@@ -1,4 +1,6 @@
 cff-version: 1.2.0
+# Zenodo (InvenioRDM) DOI - always resolves to the latest version of this archive
+doi: 10.5281/zenodo.24239669
 message: "If you use this software, please cite it using these metadata."
 title: "szl_energy_attest"
 abstract: >-
@@ -27,7 +29,7 @@ keywords:
 references:
   - type: software
     title: "lutar-lean — machine-checked Λ proofs"
-    doi: "10.5281/zenodo.20434308"
+    doi: "10.5281/zenodo.24239654"
   - type: software
     title: "vsp-otel — verifiable-span OpenTelemetry exporter"
     doi: "10.5281/zenodo.19944926"
