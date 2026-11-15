@@ -32,4 +32,4 @@ references:
     doi: "10.5281/zenodo.24239654"
   - type: software
     title: "vsp-otel — verifiable-span OpenTelemetry exporter"
-    doi: "10.5281/zenodo.19944926"
+    doi: "10.5281/zenodo.24239896"
