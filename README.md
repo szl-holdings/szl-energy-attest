@@ -171,6 +171,59 @@ verbatim, or `null`. They are never assumed, modeled-as-fact, or back-filled.
 
 ---
 
+## Offline SOLO vs TRIAD energy admission
+
+`szl_energy_attest.agentic_efficiency.compare_agentic_efficiency` compares externally
+recorded **SOLO** and **TRIAD** task/attempt receipts without calling a GPU, model,
+network, clock, or environment variable. It does not replace or duplicate the NVML
+meter. Both exports must bind the same task-cohort and quality-rubric SHA-256 hashes
+and time window; every attempt records its receipt source hash, accepted outcome,
+input/output tokens, and timezone-aware start/end/recording timestamps. The caller
+supplies `as_of` and `max_receipt_age_seconds`, making freshness checks deterministic
+and offline.
+
+An attempt's `local_gpu_energy` may be `MEASURED`, `UNAVAILABLE`, or
+`NOT_ATTRIBUTABLE`. Admitting `MEASURED` joules requires an existing meter's
+`measured-energy` or `measured-power-integral` mode, a measurement source hash and
+unique ID, the same device and exact time interval as the attempt, and explicit
+`exclusive: true` and `complete: true`. Overlapping intervals on one device, duplicate task/attempt pairs,
+and reused measurement IDs are rejected. Any shared or missing interval prevents a
+local-board comparison; unrelated workload makes the scope `NOT_ATTRIBUTABLE`, and its
+joules remain `null`, never zero or an apportioned share. This version performs no
+baseline subtraction.
+
+Only when both sides have the same pinned source hash, task IDs and accepted task IDs can every fully
+measured attempt contribute to `LOCAL_GPU_BOARD_ENERGY_COMPARISON`. This is a gross
+**local GPU board-only** result, including retries, not a full-system claim. Cloud
+energy is `UNKNOWN` unless each remote model has an independently measured,
+source-hashed energy record for the exact cohort window. Full-stack energy is
+`FULL_STACK_ENERGY_UNAVAILABLE` if any remote model, local-board interval, or system
+overhead is unmeasured. Optional `billed_usd` accepts only `OBSERVED` amounts; a total
+is emitted only when every attempt has observed billing. Tokens and dollars are never
+converted into joules or Wh.
+
+In particular, the isolated NVIDIA RTX5050 sample of 25.19 W at 28% utilization with
+`gpt-oss:20b` running in Ollama is unrelated to Kimi/Mistral/GPT-6 and has no measured
+interval delta. It cannot establish whether SOLO or TRIAD preserves energy.
+**GPT-6/Mistral cloud energy cannot be calculated without provider disclosures**;
+this comparator admits such values only with independent, source-bound measurements
+covering the cohort. See `tests/test_agentic_efficiency.py` for complete synthetic
+input fixtures and the explicit result states.
+
+**Authenticity and authorization HOLD:** This offline comparator checks only the
+shape and consistency of caller-provided records. Hash strings, MEASURED flags,
+exclusive-device flags, and independent-evaluator claims are not authenticated.
+The result always reports `verification_scope: DECLARED_INPUT_SHAPES_ONLY`,
+`energy_savings_proven: false`, `receipt_signatures_verified: false`,
+`production_qualified: false` and `automatic_routing_authorized: false`.
+`winner` is always `null`; `reported_lower_energy_system` is only the
+arithmetic ordering of *reported* energies for comparable tasks. It is not
+an independently proved saving or permission to alter runtime routing.
+Full-stack evidence additionally requires authenticated producer measurements,
+verified exclusivity, and disjoint local/cloud/overhead accounting scopes.
+
+---
+
 ## `grid_context` — documenting *when/where* a run happened (REPORTED, optional)
 
 A receipt can carry an **optional `grid_context` block**: the *observed grid
