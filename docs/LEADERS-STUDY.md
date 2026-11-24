@@ -1,6 +1,6 @@
 # Leaders Study - szl-energy-attest (spaces pass, docs-only)
 
-Lap: OUROBOROS spaces batch-2 audit #2, target `szl-holdings/szl-governed`-class successor **szl-energy-attest** (the deprecated governed-inference-meter line now lives here). This document positions the repository against the four measured-energy domain leaders scanned and verified 2026-11-24. Nothing in this document is approved, implemented, benchmarked, or claimed; every absorb item below is an **unapproved candidate** and every open item is an **open question**. This lap adds documentation only.
+Lap: OUROBOROS spaces batch-2 audit #2, target **szl-energy-attest**, successor of the deprecated governed-inference-meter kernel line now mirrored in this repository. This document positions the repository against the four measured-energy domain leaders scanned and verified 2026-11-24. Nothing in this document is approved, implemented, benchmarked, or claimed; every absorb item below is an **unapproved candidate** and every open item is an **open question**. This lap adds documentation only.
 
 ## What this repository is
 
